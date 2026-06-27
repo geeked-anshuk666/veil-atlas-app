@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTheme } from '@/lib/theme-context'
+import { getCardClass, getTextClass, getBorderClass } from '@/lib/theme-colors'
 import ProgressBar from '../ui/ProgressBar'
 
 interface NowPost {
@@ -18,6 +20,7 @@ interface NowPanelProps {
 }
 
 export default function NowPanel({ userLocation, userId }: NowPanelProps) {
+  const { theme } = useTheme()
   const [posts, setPosts] = useState<NowPost[]>([])
   const [loading, setLoading] = useState(true)
   const [inputValue, setInputValue] = useState('')
@@ -111,7 +114,7 @@ export default function NowPanel({ userLocation, userId }: NowPanelProps) {
       <div>
         <div className="flex items-center gap-2 mb-4">
           <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
-          <h2 className="text-sm font-medium text-gray-300">voices within 500m</h2>
+          <h2 className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>voices within 500m</h2>
         </div>
       </div>
 
@@ -120,39 +123,43 @@ export default function NowPanel({ userLocation, userId }: NowPanelProps) {
         {loading && !posts.length ? (
           // Loading skeleton
           Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-[#2a2a2a] rounded-lg p-4 animate-pulse">
-              <div className="h-4 bg-gray-700 rounded mb-2" />
-              <div className="h-3 bg-gray-700 rounded w-2/3" />
+            <div key={i} className={`rounded-lg p-4 animate-pulse ${getCardClass(theme)}`}>
+              <div className={`h-4 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-300'} rounded mb-2`} />
+              <div className={`h-3 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-300'} rounded w-2/3`} />
             </div>
           ))
         ) : posts.length > 0 ? (
           posts.map((post) => (
-            <div key={post.id} className="bg-[#2a2a2a] rounded-lg p-3 space-y-2">
+            <div key={post.id} className={`rounded-lg p-3 space-y-2 ${getCardClass(theme)}`}>
               <div className="flex justify-between items-start gap-2">
-                <span className="text-xs text-gray-500">anonymous</span>
-                <span className="text-xs text-gray-500">{getTimeAgo(post.created_at)}</span>
+                <span className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>anonymous</span>
+                <span className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>{getTimeAgo(post.created_at)}</span>
               </div>
-              <p className="text-sm text-white leading-relaxed">{post.content}</p>
+              <p className={`text-sm leading-relaxed ${theme === 'dark' ? 'text-white' : 'text-black'}`}>{post.content}</p>
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-500">~{getDistance(post.lat, post.lng)} away</span>
+                <span className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>~{getDistance(post.lat, post.lng)} away</span>
               </div>
               <ProgressBar percentage={getProgressPercentage(post.created_at)} color="blue" />
             </div>
           ))
         ) : (
-          <div className="text-center py-8 text-gray-500">quiet here right now</div>
+          <div className={`text-center py-8 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>quiet here right now</div>
         )}
       </div>
 
       {/* Input */}
-      <div className="flex gap-2 pt-4 border-t border-gray-700">
+      <div className={`flex gap-2 pt-4 border-t ${getBorderClass(theme)}`}>
         <input
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
           placeholder="leave a signal..."
-          className="flex-1 bg-[#2a2a2a] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+          className={`flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 ${
+            theme === 'dark'
+              ? 'bg-[#2a2a2a] border-gray-700 text-white placeholder-gray-500'
+              : 'bg-[#f5f5f5] border-gray-300 text-black placeholder-gray-400'
+          }`}
         />
         <button
           onClick={handleSubmit}

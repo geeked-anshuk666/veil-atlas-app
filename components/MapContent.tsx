@@ -2,6 +2,7 @@
 
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet'
 import { LatLng } from 'leaflet'
+import { useTheme } from '@/lib/theme-context'
 import 'leaflet/dist/leaflet.css'
 
 interface MapContentProps {
@@ -12,6 +13,7 @@ interface MapContentProps {
 }
 
 const CARTODB_DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+const CARTODB_LIGHT_TILES = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
 const CARTODB_ATTRIBUTION = '© OpenStreetMap contributors © CARTO'
 
 export default function MapContent({
@@ -20,6 +22,7 @@ export default function MapContent({
   nowPosts,
   memories,
 }: MapContentProps) {
+  const { theme } = useTheme()
   const [lat, lng] = userLocation
 
   return (
@@ -32,7 +35,7 @@ export default function MapContent({
         className="h-full w-full"
       >
         <TileLayer
-          url={CARTODB_DARK_TILES}
+          url={theme === 'dark' ? CARTODB_DARK_TILES : CARTODB_LIGHT_TILES}
           attribution={CARTODB_ATTRIBUTION}
           maxZoom={19}
         />

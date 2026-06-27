@@ -2,7 +2,7 @@ import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
-import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
+import LayoutClient from '@/components/LayoutClient'
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
 const geistMono = Geist_Mono({
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  colorScheme: 'dark',
+  colorScheme: 'dark light',
   themeColor: '#0a0a0a',
   userScalable: false,
 }
@@ -44,11 +44,12 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} dark`}>
-      <body className="font-sans antialiased bg-[#0a0a0a] text-white">
-        <ServiceWorkerRegister />
-        {children}
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className="font-sans antialiased bg-[#0a0a0a] text-white transition-colors duration-300">
+        <LayoutClient>
+          {children}
+          {process.env.NODE_ENV === 'production' && <Analytics />}
+        </LayoutClient>
       </body>
     </html>
   )

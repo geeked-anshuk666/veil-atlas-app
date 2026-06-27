@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { useTheme } from '@/lib/theme-context'
+import { getBgClass, getTextClass } from '@/lib/theme-colors'
 
 interface LayerSelectorProps {
   activeLayer: 'now' | 'feel' | 'truth' | 'memory' | 'rhythm'
@@ -16,6 +18,7 @@ const layers = [
 ] as const
 
 export default function LayerSelector({ activeLayer, onLayerChange }: LayerSelectorProps) {
+  const { theme } = useTheme()
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // Scroll active pill into view
@@ -28,7 +31,11 @@ export default function LayerSelector({ activeLayer, onLayerChange }: LayerSelec
   }, [activeLayer])
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-black via-black to-transparent pt-8 pb-6 px-4 pointer-events-none">
+    <div className={`fixed bottom-0 left-0 right-0 z-50 pt-8 pb-6 px-4 pointer-events-none transition-colors duration-300 ${
+      theme === 'dark' 
+        ? 'bg-gradient-to-t from-black via-black to-transparent' 
+        : 'bg-gradient-to-t from-white via-white to-transparent'
+    }`}>
       <div
         ref={scrollRef}
         className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide pointer-events-auto"
@@ -45,8 +52,12 @@ export default function LayerSelector({ activeLayer, onLayerChange }: LayerSelec
               px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 whitespace-nowrap
               ${
                 activeLayer === id
-                  ? `bg-opacity-100 text-black shadow-lg`
-                  : 'bg-transparent border border-gray-600 text-gray-300 hover:border-gray-400'
+                  ? `bg-opacity-100 ${theme === 'dark' ? 'text-black' : 'text-white'} shadow-lg`
+                  : `bg-transparent border ${
+                      theme === 'dark' 
+                        ? 'border-gray-600 text-gray-300 hover:border-gray-400' 
+                        : 'border-gray-400 text-gray-600 hover:border-gray-500'
+                    }`
               }
             `}
             style={{

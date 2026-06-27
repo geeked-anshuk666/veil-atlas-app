@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { Dynamic } from 'next/dynamic'
+import { useTheme } from '@/lib/theme-context'
+import { getBgClass } from '@/lib/theme-colors'
 import Map from '@/components/Map'
 import LayerSelector from '@/components/LayerSelector'
 import BottomSheet from '@/components/BottomSheet'
@@ -13,6 +15,7 @@ import RhythmPanel from '@/components/layers/RhythmPanel'
 import type { LayerType, Post, Memory } from '@/types'
 
 export default function HomePage() {
+  const { theme } = useTheme()
   const [activeLayer, setActiveLayer] = useState<LayerType>('now')
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const [userId, setUserId] = useState<string>('')
@@ -92,7 +95,7 @@ export default function HomePage() {
   }, [activeLayer])
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-[#0a0a0a]">
+    <div className={`relative w-full h-screen overflow-hidden transition-colors duration-300 ${getBgClass(theme, 'primary')}`}>
       {/* Map */}
       <Map
         activeLayer={activeLayer}

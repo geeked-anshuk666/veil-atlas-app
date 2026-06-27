@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useTheme } from '@/lib/theme-context'
+import { getCardClass, getTextClass, getBgClass } from '@/lib/theme-colors'
 
 interface BottomSheetProps {
   isOpen: boolean
@@ -9,6 +11,7 @@ interface BottomSheetProps {
 }
 
 export default function BottomSheet({ isOpen, children, onClose }: BottomSheetProps) {
+  const { theme } = useTheme()
   const [displayHeight, setDisplayHeight] = useState('0vh')
   const contentRef = useRef<HTMLDivElement>(null)
 
@@ -21,7 +24,9 @@ export default function BottomSheet({ isOpen, children, onClose }: BottomSheetPr
       {/* Overlay backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"
+          className={`fixed inset-0 z-30 backdrop-blur-sm transition-colors duration-300 ${
+            theme === 'dark' ? 'bg-black/50' : 'bg-white/50'
+          }`}
           onClick={onClose}
           style={{
             animation: 'fadeIn 0.3s ease-out',
@@ -31,7 +36,7 @@ export default function BottomSheet({ isOpen, children, onClose }: BottomSheetPr
 
       {/* Bottom sheet */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-40 bg-[#1a1a1a] rounded-t-2xl overflow-hidden transition-all duration-300 ease-out"
+        className={`fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl overflow-hidden transition-all duration-300 ease-out ${getCardClass(theme)}`}
         style={{
           height: displayHeight,
           transform: `translateY(${isOpen ? 0 : '100%'})`,
@@ -39,7 +44,7 @@ export default function BottomSheet({ isOpen, children, onClose }: BottomSheetPr
       >
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-2">
-          <div className="w-10 h-1 bg-gray-600 rounded-full" />
+          <div className={`w-10 h-1 rounded-full ${theme === 'dark' ? 'bg-gray-600' : 'bg-gray-400'}`} />
         </div>
 
         {/* Content */}

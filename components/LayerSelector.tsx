@@ -31,7 +31,7 @@ export default function LayerSelector({ activeLayer, onLayerChange }: LayerSelec
   }, [activeLayer])
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 pb-6 px-4 pointer-events-none">
+    <div className="hidden fixed bottom-0 left-0 right-0 z-50 pb-6 px-4 pointer-events-none">
       <div
         ref={scrollRef}
         className={`flex gap-3 overflow-x-auto pb-2 scrollbar-hide pointer-events-auto rounded-full p-1 transition-all duration-300 ${

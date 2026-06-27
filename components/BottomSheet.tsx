@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useTheme } from '@/lib/theme-context'
-import { getCardClass, getTextClass, getBgClass } from '@/lib/theme-colors'
 
 type SnapPoint = 'peek' | 'half' | 'full'
 
@@ -13,77 +12,77 @@ interface BottomSheetProps {
   layerName?: string
 }
 
-const SNAP_POINTS = {
-  peek: 0.25,  // 25vh
-  half: 0.6,   // 60vh
-  full: 0.9,   // 90vh
-}
+const PEEK = 120
+const HALF = (typeof window !== 'undefined' ? window.innerHeight * 0.5 : 0)
+const FULL = (typeof window !== 'undefined' ? window.innerHeight * 0.9 : 0)
 
 export default function BottomSheet({ isOpen, children, onClose, layerName }: BottomSheetProps) {
   const { theme } = useTheme()
-  const [snapPoint, setSnapPoint] = useState<SnapPoint>('half')
+  const [sheetHeight, setSheetHeight] = useState(PEEK)
   const [isDragging, setIsDragging] = useState(false)
-  const [dragStart, setDragStart] = useState(0)
   const [windowHeight, setWindowHeight] = useState(0)
+  const dragStartY = useRef(0)
+  const dragStartHeight = useRef(0)
   const sheetRef = useRef<HTMLDivElement>(null)
-  const contentRef = useRef<HTMLDivElement>(null)
+  const handleRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setWindowHeight(window.innerHeight)
   }, [])
 
-  const getHeight = () => {
-    return windowHeight * SNAP_POINTS[snapPoint]
-  }
-
-  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
-    setIsDragging(true)
-    const startPos = 'touches' in e ? e.touches[0].clientY : e.clientY
-    setDragStart(startPos)
-  }
-
-  const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDragging) return
-
-    const currentPos = 'touches' in e ? e.touches[0].clientY : e.clientY
-    const delta = currentPos - dragStart
-
-    // Determine new snap point based on drag direction
-    if (delta > 100 && snapPoint === 'full') {
-      setSnapPoint('half')
-      setIsDragging(false)
-    } else if (delta > 100 && snapPoint === 'half') {
-      setSnapPoint('peek')
-      setIsDragging(false)
-    } else if (delta < -100 && snapPoint === 'peek') {
-      setSnapPoint('half')
-      setIsDragging(false)
-    } else if (delta < -100 && snapPoint === 'half') {
-      setSnapPoint('full')
-      setIsDragging(false)
+  const calculateSnapPoints = () => {
+    const h = windowHeight
+    return {
+      peek: 120,
+      half: h * 0.5,
+      full: h * 0.9,
     }
   }
 
-  const handleDragEnd = () => {
+  const onHandlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId)
+    dragStartY.current = e.clientY
+    dragStartHeight.current = sheetHeight
+    setIsDragging(true)
+  }
+
+  const onHandlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging) return
+
+    const points = calculateSnapPoints()
+    const delta = dragStartY.current - e.clientY
+    const newHeight = Math.min(points.full, Math.max(points.peek, dragStartHeight.current + delta))
+    setSheetHeight(newHeight)
+  }
+
+  const onHandlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     setIsDragging(false)
+
+    // Snap to nearest point
+    const points = calculateSnapPoints()
+    const pointsArr = [points.peek, points.half, points.full]
+    const nearest = pointsArr.reduce((a, b) =>
+      Math.abs(a - sheetHeight) < Math.abs(b - sheetHeight) ? a : b
+    )
+    setSheetHeight(nearest)
   }
 
   useEffect(() => {
-    if (isOpen && snapPoint === 'peek') {
-      setSnapPoint('half')
+    if (isOpen && sheetHeight === PEEK) {
+      const points = calculateSnapPoints()
+      setSheetHeight(points.half)
     }
-  }, [isOpen, snapPoint])
+  }, [isOpen, sheetHeight, windowHeight])
 
-  const height = getHeight()
-  const displayHeight = isOpen ? height : 0
+  const displayHeight = isOpen ? sheetHeight : 0
 
   return (
     <>
       {/* Overlay backdrop */}
       {isOpen && (
         <div
-          className={`fixed inset-0 z-30 backdrop-blur-sm transition-colors duration-300 ${
-            theme === 'dark' ? 'bg-black/50' : 'bg-white/50'
+          className={`fixed inset-0 z-35 backdrop-blur-sm transition-colors duration-300 ${
+            theme === 'dark' ? 'bg-black/40' : 'bg-white/40'
           }`}
           onClick={onClose}
           style={{
@@ -92,58 +91,66 @@ export default function BottomSheet({ isOpen, children, onClose, layerName }: Bo
         />
       )}
 
-      {/* Premium Bottom Sheet */}
+      {/* Bottom sheet */}
       <div
         ref={sheetRef}
-        className={`fixed bottom-0 left-0 right-0 z-40 rounded-t-3xl overflow-hidden transition-all duration-300 ease-out will-change-transform ${
-          theme === 'dark'
-            ? 'bg-[#0f0f0f]/80 border border-white/10 backdrop-blur-2xl'
-            : 'bg-white/80 border border-black/10 backdrop-blur-2xl'
-        }`}
+        className="fixed bottom-0 left-14 right-0 z-40 rounded-t-3xl overflow-hidden transition-shadow duration-300"
         style={{
           height: displayHeight,
-          transform: `translateY(${isOpen ? 0 : '100%'})`,
-          boxShadow: isOpen
-            ? theme === 'dark'
-              ? '0 -20px 60px rgba(0, 0, 0, 0.4)'
-              : '0 -20px 60px rgba(0, 0, 0, 0.1)'
-            : 'none',
+          transition: isDragging ? 'none' : 'height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          background: theme === 'dark' ? 'rgba(12, 12, 16, 0.82)' : 'rgba(240, 240, 245, 0.82)',
+          backdropFilter: 'blur(28px) saturate(180%)',
+          borderTop: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`,
+          borderLeft: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+          borderRight: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+          boxShadow: `0 -12px 48px ${theme === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.1)'}, inset 0 1px 0 ${
+            theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'
+          }`,
         }}
       >
-        {/* Drag Handle */}
+        {/* Drag handle */}
         <div
-          className={`flex justify-center py-3 ${theme === 'dark' ? 'bg-black/20' : 'bg-gray-100'} cursor-grab active:cursor-grabbing border-b ${
-            theme === 'dark' ? 'border-white/10' : 'border-black/10'
+          ref={handleRef}
+          className={`h-14 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing select-none border-b ${
+            theme === 'dark'
+              ? 'border-white/5'
+              : 'border-black/5'
           }`}
-          onMouseDown={handleDragStart}
-          onTouchStart={handleDragStart}
-          onMouseMove={handleDragMove}
-          onTouchMove={handleDragMove}
-          onMouseUp={handleDragEnd}
-          onTouchEnd={handleDragEnd}
+          onPointerDown={onHandlePointerDown}
+          onPointerMove={onHandlePointerMove}
+          onPointerUp={onHandlePointerUp}
+          onPointerCancel={onHandlePointerUp}
+          style={{ touchAction: 'none' }}
         >
+          {/* Handle bar */}
           <div
-            className={`w-12 h-1.5 rounded-full transition-colors ${
-              theme === 'dark' ? 'bg-gray-600' : 'bg-gray-400'
-            }`}
+            className="w-9 h-1 rounded-full transition-all duration-300"
+            style={{
+              background: theme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+              opacity: isDragging ? 0.8 : 0.5,
+              transform: isDragging ? 'scale(1.1)' : 'scale(1)',
+            }}
           />
+          {/* Layer label */}
+          {layerName && (
+            <p
+              className="text-xs font-semibold uppercase tracking-widest mt-1.5 transition-all duration-300"
+              style={{
+                color: isDragging ? 'rgba(59, 130, 246, 1)' : 'rgba(59, 130, 246, 0.7)',
+              }}
+            >
+              {layerName}
+            </p>
+          )}
         </div>
 
-        {/* Layer name header with breathing animation */}
-        {layerName && (
-          <div className={`px-6 py-4 border-b ${theme === 'dark' ? 'border-white/10' : 'border-black/10'}`}>
-            <h2 className={`text-lg font-semibold ${getTextClass(theme, 'primary')} animate-breathing`}>
-              {layerName}
-            </h2>
-          </div>
-        )}
-
-        {/* Content area with scroll */}
+        {/* Content area */}
         <div
-          ref={contentRef}
-          className="flex-1 overflow-y-auto overscroll-none px-6 py-4"
+          className={`overflow-y-auto px-5 pb-6 transition-all duration-300 ${
+            sheetHeight > calculateSnapPoints().half ? 'overflow-y-auto' : 'overflow-y-hidden'
+          }`}
           style={{
-            height: displayHeight - (layerName ? 140 : 60),
+            height: `calc(100% - 56px)`,
           }}
         >
           {children}

@@ -17,14 +17,17 @@ interface NowPost {
 interface NowPanelProps {
   userLocation: [number, number] | null
   userId: string
+  gpsAccuracy?: number
 }
 
-export default function NowPanel({ userLocation, userId }: NowPanelProps) {
+export default function NowPanel({ userLocation, userId, gpsAccuracy }: NowPanelProps) {
   const { theme } = useTheme()
   const [posts, setPosts] = useState<NowPost[]>([])
   const [loading, setLoading] = useState(true)
   const [inputValue, setInputValue] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  
+  const hasWeakGPS = gpsAccuracy && gpsAccuracy > 100
 
   // Fetch posts on mount and every 30 seconds
   useEffect(() => {
@@ -110,52 +113,60 @@ export default function NowPanel({ userLocation, userId }: NowPanelProps) {
   }
 
   return (
-    <div className="space-y-4 pt-2">
+    <div className="space-y-4 pt-1">
       <div>
-        <div className="flex items-center gap-2 mb-6">
-          <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse-custom" />
-          <h2 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-black'} animate-breathing`}>
-            voices within 500m
-          </h2>
-        </div>
+        <h2 className={`text-xs font-bold uppercase tracking-widest mb-6 ${
+          theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+        } animate-breathing`}>
+          ⚡ live signals
+        </h2>
       </div>
 
       {/* Posts feed */}
       <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
         {loading && !posts.length ? (
-          // Loading skeleton
           Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
-              className={`rounded-xl p-4 animate-pulse backdrop-blur-lg border transition-all duration-300 ${
+              className={`rounded-lg p-4 border animate-pulse backdrop-blur-lg ${
                 theme === 'dark'
-                  ? 'bg-white/5 border-white/10'
-                  : 'bg-black/5 border-black/10'
+                  ? 'bg-white/4 border-white/8'
+                  : 'bg-black/4 border-black/8'
               }`}
+              style={{
+                background: `linear-gradient(90deg, ${
+                  theme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'
+                } 25%, ${theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'} 50%, ${
+                  theme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'
+                } 75%)`,
+                backgroundSize: '1000px 100%',
+              }}
             >
-              <div className={`h-4 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-300'} rounded mb-2`} />
-              <div className={`h-3 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-300'} rounded w-2/3`} />
+              <div className={`h-3 ${theme === 'dark' ? 'bg-white/10' : 'bg-black/10'} rounded mb-3`} />
+              <div className={`h-2 ${theme === 'dark' ? 'bg-white/10' : 'bg-black/10'} rounded w-2/3`} />
             </div>
           ))
         ) : posts.length > 0 ? (
           posts.map((post, idx) => (
             <div
               key={post.id}
-              className={`rounded-xl p-4 space-y-2 backdrop-blur-lg border transition-all duration-300 hover:border-blue-400/50 animate-slideUp ${
+              className={`rounded-lg p-4 space-y-2 border transition-all duration-300 hover:border-blue-500/50 animate-slideUp ${
                 theme === 'dark'
-                  ? 'bg-blue-500/5 border-blue-400/20'
-                  : 'bg-blue-500/5 border-blue-400/20'
+                  ? 'bg-white/4 border-white/8'
+                  : 'bg-black/4 border-black/8'
               }`}
               style={{
-                animationDelay: `${idx * 50}ms`,
-                borderLeft: '3px solid #3b82f6',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                animationDelay: `${idx * 60}ms`,
+                borderLeft: '2px solid #3b82f6',
               }}
             >
               <div className="flex justify-between items-start gap-2">
-                <span className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                <span className={`text-xs font-medium ${theme === 'dark' ? 'text-blue-300' : 'text-blue-700'}`}>
                   anonymous
                 </span>
-                <span className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
+                <span className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>
                   {getTimeAgo(post.created_at)}
                 </span>
               </div>
@@ -163,7 +174,7 @@ export default function NowPanel({ userLocation, userId }: NowPanelProps) {
                 {post.content}
               </p>
               <div className="flex justify-between items-center">
-                <span className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
+                <span className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>
                   ~{getDistance(post.lat, post.lng)} away
                 </span>
               </div>
@@ -172,32 +183,52 @@ export default function NowPanel({ userLocation, userId }: NowPanelProps) {
           ))
         ) : (
           <div className={`text-center py-12 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>
-            <p className="animate-breathing">quiet here right now</p>
+            <p className="animate-breathing text-sm">quiet here right now</p>
           </div>
         )}
       </div>
 
+      {/* GPS Accuracy Warning */}
+      {hasWeakGPS && (
+        <div className={`mt-4 p-3 rounded-lg border text-xs ${
+          theme === 'dark'
+            ? 'bg-amber-500/10 border-amber-400/30 text-amber-300'
+            : 'bg-amber-500/10 border-amber-400/30 text-amber-700'
+        }`}>
+          ⚡ GPS signal weak — some features limited
+        </div>
+      )}
+
       {/* Input */}
-      <div className={`flex gap-2 pt-4 border-t ${getBorderClass(theme)}`}>
+      <div className={`flex gap-2 pt-4 border-t ${theme === 'dark' ? 'border-white/10' : 'border-black/10'}`}>
         <input
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
-          placeholder="leave a signal..."
-          className={`flex-1 border rounded-lg px-4 py-2.5 text-sm focus:outline-none transition-all duration-300 backdrop-blur-sm ${
-            theme === 'dark'
-              ? 'bg-white/10 border-blue-400/30 text-white placeholder-gray-500 focus:border-blue-400 focus:bg-blue-500/10'
-              : 'bg-black/10 border-blue-400/30 text-black placeholder-gray-600 focus:border-blue-400 focus:bg-blue-400/10'
+          onKeyPress={(e) => e.key === 'Enter' && !hasWeakGPS && handleSubmit()}
+          placeholder={hasWeakGPS ? 'GPS signal weak...' : 'drop a signal...'}
+          disabled={hasWeakGPS}
+          className={`flex-1 border rounded-full px-4 py-2.5 text-sm focus:outline-none transition-all duration-300 ${
+            hasWeakGPS
+              ? theme === 'dark'
+                ? 'bg-white/3 border-white/5 text-gray-500 placeholder-gray-600'
+                : 'bg-black/3 border-black/5 text-gray-600 placeholder-gray-500 cursor-not-allowed'
+              : theme === 'dark'
+                ? 'bg-white/6 border-white/12 text-white placeholder-gray-500 focus:border-blue-400/50 focus:bg-blue-500/8'
+                : 'bg-black/6 border-black/12 text-black placeholder-gray-600 focus:border-blue-400/50 focus:bg-blue-400/8'
           }`}
+          style={{
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+          }}
         />
         <button
           onClick={handleSubmit}
-          disabled={submitting || !inputValue.trim()}
-          className={`px-4 py-2.5 rounded-lg font-bold text-lg transition-all duration-300 backdrop-blur-sm ${
-            inputValue.trim()
-              ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:shadow-lg hover:shadow-blue-500/50 active:scale-95'
-              : 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
+          disabled={submitting || !inputValue.trim() || hasWeakGPS}
+          className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300 ${
+            inputValue.trim() && !hasWeakGPS
+              ? 'bg-blue-500 text-white hover:bg-blue-600 active:scale-90 shadow-lg shadow-blue-500/30'
+              : 'bg-gray-600/30 text-gray-500 cursor-not-allowed'
           }`}
         >
           {submitting ? '⟳' : '→'}

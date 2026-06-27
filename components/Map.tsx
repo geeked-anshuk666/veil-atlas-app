@@ -6,8 +6,10 @@ import 'leaflet/dist/leaflet.css'
 interface MapProps {
   activeLayer: 'now' | 'feel' | 'truth' | 'memory' | 'rhythm'
   userLocation: [number, number] | null
+  selectedLocation: [number, number] | null
   nowPosts: Array<{ id: string; lat: number; lng: number; content: string }>
   memories: Array<{ id: string; lat: number; lng: number; year_label: string }>
+  onMapClick?: (lat: number, lng: number) => void
 }
 
 const MapContent = lazy(() => import('./MapContent'))
@@ -15,8 +17,10 @@ const MapContent = lazy(() => import('./MapContent'))
 export default function Map({
   activeLayer,
   userLocation,
+  selectedLocation,
   nowPosts,
   memories,
+  onMapClick,
 }: MapProps) {
   const [mounted, setMounted] = useState(false)
 
@@ -45,8 +49,10 @@ export default function Map({
       <MapContent
         activeLayer={activeLayer}
         userLocation={userLocation}
+        selectedLocation={selectedLocation}
         nowPosts={nowPosts}
         memories={memories}
+        onMapClick={onMapClick}
       />
     </Suspense>
   )

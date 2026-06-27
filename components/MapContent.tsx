@@ -1,6 +1,6 @@
 'use client'
 
-import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet'
+import { MapContainer, TileLayer, CircleMarker, Popup, useMapEvent } from 'react-leaflet'
 import { LatLng } from 'leaflet'
 import { useTheme } from '@/lib/theme-context'
 import 'leaflet/dist/leaflet.css'
@@ -8,19 +8,32 @@ import 'leaflet/dist/leaflet.css'
 interface MapContentProps {
   activeLayer: 'now' | 'feel' | 'truth' | 'memory' | 'rhythm'
   userLocation: [number, number]
+  selectedLocation: [number, number] | null
   nowPosts: Array<{ id: string; lat: number; lng: number; content: string }>
   memories: Array<{ id: string; lat: number; lng: number; year_label: string }>
+  onMapClick?: (lat: number, lng: number) => void
 }
 
 const CARTODB_DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
 const CARTODB_LIGHT_TILES = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
 const CARTODB_ATTRIBUTION = '© OpenStreetMap contributors © CARTO'
 
+// Helper component to capture map clicks
+function MapClickHandler({ onMapClick, activeLayer }: { onMapClick?: (lat: number, lng: number) => void; activeLayer: string }) {
+  useMapEvent('click', (e) => {
+    if (activeLayer === 'now') return // Now layer doesn't allow clicks
+    onMapClick?.(e.latlng.lat, e.latlng.lng)
+  })
+  return null
+}
+
 export default function MapContent({
   activeLayer,
   userLocation,
+  selectedLocation,
   nowPosts,
   memories,
+  onMapClick,
 }: MapContentProps) {
   const { theme } = useTheme()
   const [lat, lng] = userLocation
@@ -39,6 +52,9 @@ export default function MapContent({
           attribution={CARTODB_ATTRIBUTION}
           maxZoom={19}
         />
+
+        {/* Map click handler */}
+        <MapClickHandler onMapClick={onMapClick} activeLayer={activeLayer} />
 
         {/* Now layer - blue pulsing dots */}
         {activeLayer === 'now' &&
@@ -111,6 +127,29 @@ export default function MapContent({
             weight={1}
           />
         )}
+
+        {/* Selected location marker */}
+        {selectedLocation && activeLayer !== 'now' && (
+          <CircleMarker
+            center={new LatLng(selectedLocation[0], selectedLocation[1])}
+            radius={10}
+            fillOpacity={0.9}
+            color="white"
+            fillColor={activeLayer === 'feel' ? '#f59e0b' : activeLayer === 'truth' ? '#ef4444' : activeLayer === 'memory' ? '#a855f7' : '#22c55e'}
+            weight={3}
+          />
+        )}
+
+        {/* User location marker */}
+        <CircleMarker
+          center={new LatLng(lat, lng)}
+          radius={6}
+          fillOpacity={0.95}
+          color="white"
+          fillColor="white"
+          weight={0}
+          className="user-marker"
+        />
       </MapContainer>
 
       {/* CSS animation for pulsing dots */}

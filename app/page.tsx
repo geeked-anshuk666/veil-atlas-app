@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { Dynamic } from 'next/dynamic'
 import { useTheme } from '@/lib/theme-context'
 import { getBgClass } from '@/lib/theme-colors'
+import LeftNavigation from '@/components/LeftNavigation'
+import LocationGating from '@/components/LocationGating'
 import Map from '@/components/Map'
 import LayerSelector from '@/components/LayerSelector'
 import BottomSheet from '@/components/BottomSheet'
@@ -18,8 +20,12 @@ export default function HomePage() {
   const { theme } = useTheme()
   const [activeLayer, setActiveLayer] = useState<LayerType>('now')
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null)
+  const [selectedLocation, setSelectedLocation] = useState<[number, number] | null>(null)
   const [userId, setUserId] = useState<string>('')
   const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const [hasLocationPermission, setHasLocationPermission] = useState(false)
+  const [isGeolocating, setIsGeolocating] = useState(true)
   const [nowPosts, setNowPosts] = useState<Post[]>([])
   const [memories, setMemories] = useState<Memory[]>([])
 
@@ -39,17 +45,22 @@ export default function HomePage() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const { latitude, longitude } = position.coords
+          const { latitude, longitude, accuracy } = position.coords
           setUserLocation([latitude, longitude])
+          setGpsAccuracy(accuracy)
+          setHasLocationPermission(true)
+          setIsGeolocating(false)
         },
         () => {
-          // Fallback to New York
-          setUserLocation([40.7128, -74.006])
+          // User denied location or error occurred
+          setHasLocationPermission(false)
+          setIsGeolocating(false)
         }
       )
     } else {
-      // Fallback to New York
-      setUserLocation([40.7128, -74.006])
+      // Geolocation not supported
+      setHasLocationPermission(false)
+      setIsGeolocating(false)
     }
   }, [])
 
@@ -94,17 +105,70 @@ export default function HomePage() {
     setIsSheetOpen(true)
   }, [activeLayer])
 
+  const handleMapClick = (lat: number, lng: number) => {
+    if (activeLayer === 'now') return // Now layer is locked to user location
+    setSelectedLocation([lat, lng])
+    setIsSheetOpen(true)
+  }
+
+  const handleLayerChange = (layer: LayerType) => {
+    setActiveLayer(layer)
+    // When switching to Now, clear selected location
+    if (layer === 'now') {
+      setSelectedLocation(null)
+    }
+  }
+
+  const handleRequestLocation = () => {
+    setIsGeolocating(true)
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude, accuracy } = position.coords
+          setUserLocation([latitude, longitude])
+          setGpsAccuracy(accuracy)
+          setHasLocationPermission(true)
+          setIsGeolocating(false)
+        },
+        () => {
+          setIsGeolocating(false)
+        }
+      )
+    }
+  }
+
+  const handleExploreWithoutLocation = () => {
+    // Set to New York as default
+    setUserLocation([40.7128, -74.006])
+    setGpsAccuracy(1000)
+    setHasLocationPermission(true)
+    setIsGeolocating(false)
+  }
+
   return (
     <div className={`relative w-full h-screen overflow-hidden transition-colors duration-300 ${getBgClass(theme, 'primary')}`}>
+      {/* Location Gating Overlay */}
+      <LocationGating
+        isGeolocating={isGeolocating}
+        hasLocationPermission={hasLocationPermission}
+        onRequestLocation={handleRequestLocation}
+        onExploreWithoutLocation={handleExploreWithoutLocation}
+      />
+
+      {/* Left Navigation */}
+      <LeftNavigation activeLayer={activeLayer} onLayerChange={handleLayerChange} />
+
       {/* Map */}
       <Map
         activeLayer={activeLayer}
         userLocation={userLocation}
+        selectedLocation={selectedLocation}
         nowPosts={nowPosts}
         memories={memories}
+        onMapClick={handleMapClick}
       />
 
-      {/* Layer Selector */}
+      {/* Layer Selector - will be hidden, kept for compatibility */}
       <LayerSelector activeLayer={activeLayer} onLayerChange={setActiveLayer} />
 
       {/* Bottom Sheet */}
@@ -124,7 +188,7 @@ export default function HomePage() {
         }
       >
         {activeLayer === 'now' && (
-          <NowPanel userLocation={userLocation} userId={userId} />
+          <NowPanel userLocation={userLocation} userId={userId} gpsAccuracy={gpsAccuracy || undefined} />
         )}
         {activeLayer === 'feel' && (
           <FeelPanel userLocation={userLocation} userId={userId} />

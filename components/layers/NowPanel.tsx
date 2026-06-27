@@ -110,40 +110,70 @@ export default function NowPanel({ userLocation, userId }: NowPanelProps) {
   }
 
   return (
-    <div className="space-y-4 pt-4">
+    <div className="space-y-4 pt-2">
       <div>
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
-          <h2 className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>voices within 500m</h2>
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse-custom" />
+          <h2 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-black'} animate-breathing`}>
+            voices within 500m
+          </h2>
         </div>
       </div>
 
       {/* Posts feed */}
-      <div className="space-y-3 max-h-96 overflow-y-auto">
+      <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
         {loading && !posts.length ? (
           // Loading skeleton
           Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className={`rounded-lg p-4 animate-pulse ${getCardClass(theme)}`}>
+            <div
+              key={i}
+              className={`rounded-xl p-4 animate-pulse backdrop-blur-lg border transition-all duration-300 ${
+                theme === 'dark'
+                  ? 'bg-white/5 border-white/10'
+                  : 'bg-black/5 border-black/10'
+              }`}
+            >
               <div className={`h-4 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-300'} rounded mb-2`} />
               <div className={`h-3 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-300'} rounded w-2/3`} />
             </div>
           ))
         ) : posts.length > 0 ? (
-          posts.map((post) => (
-            <div key={post.id} className={`rounded-lg p-3 space-y-2 ${getCardClass(theme)}`}>
+          posts.map((post, idx) => (
+            <div
+              key={post.id}
+              className={`rounded-xl p-4 space-y-2 backdrop-blur-lg border transition-all duration-300 hover:border-blue-400/50 animate-slideUp ${
+                theme === 'dark'
+                  ? 'bg-blue-500/5 border-blue-400/20'
+                  : 'bg-blue-500/5 border-blue-400/20'
+              }`}
+              style={{
+                animationDelay: `${idx * 50}ms`,
+                borderLeft: '3px solid #3b82f6',
+              }}
+            >
               <div className="flex justify-between items-start gap-2">
-                <span className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>anonymous</span>
-                <span className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>{getTimeAgo(post.created_at)}</span>
+                <span className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                  anonymous
+                </span>
+                <span className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
+                  {getTimeAgo(post.created_at)}
+                </span>
               </div>
-              <p className={`text-sm leading-relaxed ${theme === 'dark' ? 'text-white' : 'text-black'}`}>{post.content}</p>
+              <p className={`text-sm leading-relaxed ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
+                {post.content}
+              </p>
               <div className="flex justify-between items-center">
-                <span className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>~{getDistance(post.lat, post.lng)} away</span>
+                <span className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
+                  ~{getDistance(post.lat, post.lng)} away
+                </span>
               </div>
               <ProgressBar percentage={getProgressPercentage(post.created_at)} color="blue" />
             </div>
           ))
         ) : (
-          <div className={`text-center py-8 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>quiet here right now</div>
+          <div className={`text-center py-12 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>
+            <p className="animate-breathing">quiet here right now</p>
+          </div>
         )}
       </div>
 
@@ -155,18 +185,22 @@ export default function NowPanel({ userLocation, userId }: NowPanelProps) {
           onChange={(e) => setInputValue(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
           placeholder="leave a signal..."
-          className={`flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 ${
+          className={`flex-1 border rounded-lg px-4 py-2.5 text-sm focus:outline-none transition-all duration-300 backdrop-blur-sm ${
             theme === 'dark'
-              ? 'bg-[#2a2a2a] border-gray-700 text-white placeholder-gray-500'
-              : 'bg-[#f5f5f5] border-gray-300 text-black placeholder-gray-400'
+              ? 'bg-white/10 border-blue-400/30 text-white placeholder-gray-500 focus:border-blue-400 focus:bg-blue-500/10'
+              : 'bg-black/10 border-blue-400/30 text-black placeholder-gray-600 focus:border-blue-400 focus:bg-blue-400/10'
           }`}
         />
         <button
           onClick={handleSubmit}
           disabled={submitting || !inputValue.trim()}
-          className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 text-black px-3 py-2 rounded-lg transition-colors"
+          className={`px-4 py-2.5 rounded-lg font-bold text-lg transition-all duration-300 backdrop-blur-sm ${
+            inputValue.trim()
+              ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:shadow-lg hover:shadow-blue-500/50 active:scale-95'
+              : 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
+          }`}
         >
-          →
+          {submitting ? '⟳' : '→'}
         </button>
       </div>
     </div>

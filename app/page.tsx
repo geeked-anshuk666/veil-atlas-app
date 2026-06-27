@@ -111,6 +111,17 @@ export default function HomePage() {
       <BottomSheet
         isOpen={isSheetOpen}
         onClose={() => setIsSheetOpen(false)}
+        layerName={
+          activeLayer === 'now'
+            ? 'voices within 500m'
+            : activeLayer === 'feel'
+              ? 'the feeling here'
+              : activeLayer === 'truth'
+                ? 'documented nearby'
+                : activeLayer === 'memory'
+                  ? 'layers of time'
+                  : 'when this place breathes'
+        }
       >
         {activeLayer === 'now' && (
           <NowPanel userLocation={userLocation} userId={userId} />

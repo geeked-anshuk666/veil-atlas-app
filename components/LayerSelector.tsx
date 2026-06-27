@@ -10,11 +10,11 @@ interface LayerSelectorProps {
 }
 
 const layers = [
-  { id: 'now', label: 'Now', color: 'blue', hex: '#3b82f6' },
-  { id: 'feel', label: 'Feel', color: 'amber', hex: '#fbbf24' },
-  { id: 'truth', label: 'Truth', color: 'red', hex: '#ef4444' },
-  { id: 'memory', label: 'Memory', color: 'purple', hex: '#a855f7' },
-  { id: 'rhythm', label: 'Rhythm', color: 'green', hex: '#22c55e' },
+  { id: 'now', label: 'Now', icon: '⚡', color: 'blue', hex: '#3b82f6' },
+  { id: 'feel', label: 'Feel', icon: '🌡', color: 'amber', hex: '#fbbf24' },
+  { id: 'truth', label: 'Truth', icon: '👁', color: 'red', hex: '#ef4444' },
+  { id: 'memory', label: 'Memory', icon: '🕰', color: 'purple', hex: '#a855f7' },
+  { id: 'rhythm', label: 'Rhythm', icon: '〰', color: 'green', hex: '#22c55e' },
 ] as const
 
 export default function LayerSelector({ activeLayer, onLayerChange }: LayerSelectorProps) {
@@ -31,44 +31,42 @@ export default function LayerSelector({ activeLayer, onLayerChange }: LayerSelec
   }, [activeLayer])
 
   return (
-    <div className={`fixed bottom-0 left-0 right-0 z-50 pt-8 pb-6 px-4 pointer-events-none transition-colors duration-300 ${
-      theme === 'dark' 
-        ? 'bg-gradient-to-t from-black via-black to-transparent' 
-        : 'bg-gradient-to-t from-white via-white to-transparent'
-    }`}>
+    <div className="fixed bottom-0 left-0 right-0 z-50 pb-6 px-4 pointer-events-none">
       <div
         ref={scrollRef}
-        className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide pointer-events-auto"
+        className={`flex gap-3 overflow-x-auto pb-2 scrollbar-hide pointer-events-auto rounded-full p-1 transition-all duration-300 ${
+          theme === 'dark'
+            ? 'bg-black/30 backdrop-blur-xl border border-white/10'
+            : 'bg-white/30 backdrop-blur-xl border border-black/10'
+        }`}
         style={{
           scrollBehavior: 'smooth',
+          WebkitBackdropFilter: 'blur(10px)',
         }}
       >
-        {layers.map(({ id, label, hex }) => (
+        {layers.map(({ id, label, icon, hex }) => (
           <button
             key={id}
             onClick={() => onLayerChange(id as 'now' | 'feel' | 'truth' | 'memory' | 'rhythm')}
             data-active={activeLayer === id}
             className={`
-              px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 whitespace-nowrap
+              px-3 py-2 rounded-full font-medium text-sm transition-all duration-300 whitespace-nowrap flex items-center gap-1
               ${
                 activeLayer === id
-                  ? `bg-opacity-100 ${theme === 'dark' ? 'text-black' : 'text-white'} shadow-lg`
-                  : `bg-transparent border ${
-                      theme === 'dark' 
-                        ? 'border-gray-600 text-gray-300 hover:border-gray-400' 
-                        : 'border-gray-400 text-gray-600 hover:border-gray-500'
-                    }`
+                  ? `${theme === 'dark' ? 'text-black' : 'text-white'} animate-pulse-custom`
+                  : `${theme === 'dark' ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-700'}`
               }
             `}
             style={{
               backgroundColor: activeLayer === id ? hex : 'transparent',
               boxShadow:
                 activeLayer === id
-                  ? `0 0 20px ${hex}40, inset 0 0 10px ${hex}20`
+                  ? `0 0 24px ${hex}60, inset 0 0 12px ${hex}30`
                   : 'none',
             }}
           >
-            {label}
+            <span className="text-lg">{icon}</span>
+            <span className="hidden sm:inline">{label}</span>
           </button>
         ))}
       </div>

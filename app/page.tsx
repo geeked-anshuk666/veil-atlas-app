@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import mapboxgl from 'mapbox-gl'
+import { useEffect, useState } from 'react'
+import { Dynamic } from 'next/dynamic'
 import Map from '@/components/Map'
 import LayerSelector from '@/components/LayerSelector'
 import BottomSheet from '@/components/BottomSheet'
@@ -10,33 +10,81 @@ import FeelPanel from '@/components/layers/FeelPanel'
 import TruthPanel from '@/components/layers/TruthPanel'
 import MemoryPanel from '@/components/layers/MemoryPanel'
 import RhythmPanel from '@/components/layers/RhythmPanel'
-
-type LayerType = 'now' | 'feel' | 'truth' | 'memory' | 'rhythm'
+import type { LayerType, Post, Memory } from '@/types'
 
 export default function HomePage() {
   const [activeLayer, setActiveLayer] = useState<LayerType>('now')
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const [userId, setUserId] = useState<string>('')
   const [isSheetOpen, setIsSheetOpen] = useState(false)
-  const mapRef = useRef<mapboxgl.Map | null>(null)
+  const [nowPosts, setNowPosts] = useState<Post[]>([])
+  const [memories, setMemories] = useState<Memory[]>([])
 
-  // Initialize user ID from localStorage
+  // Initialize user ID and geolocation
   useEffect(() => {
     if (typeof window === 'undefined') return
 
+    // Get or create user ID
     let id = localStorage.getItem('veil_user_id')
     if (!id) {
       id = crypto.randomUUID()
       localStorage.setItem('veil_user_id', id)
     }
     setUserId(id)
+
+    // Get geolocation
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords
+          setUserLocation([latitude, longitude])
+        },
+        () => {
+          // Fallback to New York
+          setUserLocation([40.7128, -74.006])
+        }
+      )
+    } else {
+      // Fallback to New York
+      setUserLocation([40.7128, -74.006])
+    }
   }, [])
 
-  // Handle map ready
-  const handleMapReady = (map: mapboxgl.Map, center: [number, number]) => {
-    mapRef.current = map
-    setUserLocation(center)
-  }
+  // Fetch now posts when user location changes
+  useEffect(() => {
+    if (!userLocation) return
+
+    const fetchNowPosts = async () => {
+      try {
+        const res = await fetch(`/api/now?lat=${userLocation[0]}&lng=${userLocation[1]}`)
+        const data = await res.json()
+        setNowPosts(data)
+      } catch (error) {
+        console.error('[v0] Failed to fetch now posts:', error)
+      }
+    }
+
+    fetchNowPosts()
+    const interval = setInterval(fetchNowPosts, 30000)
+    return () => clearInterval(interval)
+  }, [userLocation])
+
+  // Fetch memories when user location changes
+  useEffect(() => {
+    if (!userLocation) return
+
+    const fetchMemories = async () => {
+      try {
+        const res = await fetch(`/api/memory?lat=${userLocation[0]}&lng=${userLocation[1]}`)
+        const data = await res.json()
+        setMemories(data)
+      } catch (error) {
+        console.error('[v0] Failed to fetch memories:', error)
+      }
+    }
+
+    fetchMemories()
+  }, [userLocation])
 
   // Open sheet when layer changes
   useEffect(() => {
@@ -44,9 +92,14 @@ export default function HomePage() {
   }, [activeLayer])
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-black">
+    <div className="relative w-full h-screen overflow-hidden bg-[#0a0a0a]">
       {/* Map */}
-      <Map onMapReady={handleMapReady} activeLayer={activeLayer} />
+      <Map
+        activeLayer={activeLayer}
+        userLocation={userLocation}
+        nowPosts={nowPosts}
+        memories={memories}
+      />
 
       {/* Layer Selector */}
       <LayerSelector activeLayer={activeLayer} onLayerChange={setActiveLayer} />

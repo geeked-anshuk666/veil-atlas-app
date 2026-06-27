@@ -31,7 +31,7 @@ export default function BottomSheet({ isOpen, children, onClose }: BottomSheetPr
 
       {/* Bottom sheet */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-50 bg-[#1a1a1a] rounded-t-2xl overflow-hidden transition-all duration-300 ease-out"
+        className="fixed bottom-0 left-0 right-0 z-40 bg-[#1a1a1a] rounded-t-2xl overflow-hidden transition-all duration-300 ease-out"
         style={{
           height: displayHeight,
           transform: `translateY(${isOpen ? 0 : '100%'})`,

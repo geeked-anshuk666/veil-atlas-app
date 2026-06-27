@@ -27,6 +27,23 @@ function MapClickHandler({ onMapClick, activeLayer }: { onMapClick?: (lat: numbe
   return null
 }
 
+// Helper component to handle flyTo for selected locations
+function FlyToLocation({ selectedLocation }: { selectedLocation: [number, number] | null }) {
+  const map = require('react-leaflet').useMap()
+  
+  useMapEvent('click', () => {
+    // Map click event - this ensures map events are active
+  })
+
+  if (selectedLocation && map) {
+    map.flyTo(new LatLng(selectedLocation[0], selectedLocation[1]), 16, {
+      duration: 1.2,
+    })
+  }
+  
+  return null
+}
+
 export default function MapContent({
   activeLayer,
   userLocation,
@@ -55,6 +72,9 @@ export default function MapContent({
 
         {/* Map click handler */}
         <MapClickHandler onMapClick={onMapClick} activeLayer={activeLayer} />
+
+        {/* FlyTo for selected locations */}
+        <FlyToLocation selectedLocation={selectedLocation} />
 
         {/* Now layer - blue pulsing dots */}
         {activeLayer === 'now' &&

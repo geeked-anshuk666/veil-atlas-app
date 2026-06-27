@@ -6,6 +6,7 @@ import { useTheme } from '@/lib/theme-context'
 import { getBgClass } from '@/lib/theme-colors'
 import LeftNavigation from '@/components/LeftNavigation'
 import LocationGating from '@/components/LocationGating'
+import SearchBar from '@/components/SearchBar'
 import Map from '@/components/Map'
 import LayerSelector from '@/components/LayerSelector'
 import BottomSheet from '@/components/BottomSheet'
@@ -26,6 +27,7 @@ export default function HomePage() {
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [hasLocationPermission, setHasLocationPermission] = useState(false)
   const [isGeolocating, setIsGeolocating] = useState(true)
+  const [searchDropdownOpen, setSearchDropdownOpen] = useState(false)
   const [nowPosts, setNowPosts] = useState<Post[]>([])
   const [memories, setMemories] = useState<Memory[]>([])
 
@@ -145,6 +147,16 @@ export default function HomePage() {
     setIsGeolocating(false)
   }
 
+  const handleSearchLocationSelect = (lat: number, lng: number, name: string) => {
+    setSelectedLocation([lat, lng])
+    setIsSheetOpen(true)
+    setSearchDropdownOpen(false)
+  }
+
+  const handleMapClickClose = () => {
+    setSearchDropdownOpen(false)
+  }
+
   return (
     <div className={`relative w-full h-screen overflow-hidden transition-colors duration-300 ${getBgClass(theme, 'primary')}`}>
       {/* Location Gating Overlay */}
@@ -157,6 +169,12 @@ export default function HomePage() {
 
       {/* Left Navigation */}
       <LeftNavigation activeLayer={activeLayer} onLayerChange={handleLayerChange} />
+
+      {/* Search Bar */}
+      <SearchBar 
+        onLocationSelect={handleSearchLocationSelect}
+        onDropdownOpen={setSearchDropdownOpen}
+      />
 
       {/* Map */}
       <Map

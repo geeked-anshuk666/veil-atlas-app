@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 
 interface FeelPanelProps {
   userLocation: [number, number] | null
+  selectedLocation: [number, number] | null
   userId: string
 }
 
@@ -26,7 +27,7 @@ interface ConfessionData {
   created_at: string
 }
 
-export default function FeelPanel({ userLocation, userId }: FeelPanelProps) {
+export default function FeelPanel({ userLocation, selectedLocation, userId }: FeelPanelProps) {
   const [feel, setFeel] = useState<FeelData | null>(null)
   const [confession, setConfession] = useState<ConfessionData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -34,15 +35,17 @@ export default function FeelPanel({ userLocation, userId }: FeelPanelProps) {
   const [newConfessionText, setNewConfessionText] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
+  const targetLocation = selectedLocation || userLocation
+
   useEffect(() => {
-    if (!userLocation) return
+    if (!targetLocation) return
 
     const fetchData = async () => {
       try {
         setLoading(true)
         const [feelRes, confessionRes] = await Promise.all([
-          fetch(`/api/feel?lat=${userLocation[1]}&lng=${userLocation[0]}`),
-          fetch(`/api/feel/pins?lat=${userLocation[1]}&lng=${userLocation[0]}`),
+          fetch(`/api/feel?lat=${targetLocation[0]}&lng=${targetLocation[1]}`),
+          fetch(`/api/feel/pins?lat=${targetLocation[0]}&lng=${targetLocation[1]}`),
         ])
         const feelData = await feelRes.json()
         const confessionData = await confessionRes.json()
@@ -56,7 +59,7 @@ export default function FeelPanel({ userLocation, userId }: FeelPanelProps) {
     }
 
     fetchData()
-  }, [userLocation])
+  }, [selectedLocation, userLocation])
 
   const handleEmotion = async (emotion: string) => {
     if (!userLocation) return
@@ -66,12 +69,16 @@ export default function FeelPanel({ userLocation, userId }: FeelPanelProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          lat: userLocation[1],
-          lng: userLocation[0],
+          lat: userLocation[0],
+          lng: userLocation[1],
           emotion,
           user_id: userId,
         }),
       })
+      // Refetch feel data
+      const res = await fetch(`/api/feel?lat=${targetLocation![0]}&lng=${targetLocation![1]}`)
+      const data = await res.json()
+      setFeel(data)
     } catch (error) {
       console.error('[v0] Error submitting emotion:', error)
     }
@@ -86,8 +93,8 @@ export default function FeelPanel({ userLocation, userId }: FeelPanelProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          lat: userLocation[1],
-          lng: userLocation[0],
+          lat: userLocation[0],
+          lng: userLocation[1],
           content: newConfessionText,
         }),
       })
@@ -95,7 +102,7 @@ export default function FeelPanel({ userLocation, userId }: FeelPanelProps) {
       setShowNewConfession(false)
       // Refetch
       const res = await fetch(
-        `/api/feel/pins?lat=${userLocation[1]}&lng=${userLocation[0]}`
+        `/api/feel/pins?lat=${targetLocation![0]}&lng=${targetLocation![1]}`
       )
       const data = await res.json()
       setConfession(data)
@@ -105,6 +112,7 @@ export default function FeelPanel({ userLocation, userId }: FeelPanelProps) {
       setSubmitting(false)
     }
   }
+
 
   const getMonthsAgo = (dateStr: string) => {
     const date = new Date(dateStr)

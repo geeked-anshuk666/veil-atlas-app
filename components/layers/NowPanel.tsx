@@ -16,11 +16,12 @@ interface NowPost {
 
 interface NowPanelProps {
   userLocation: [number, number] | null
+  selectedLocation: [number, number] | null
   userId: string
   gpsAccuracy?: number
 }
 
-export default function NowPanel({ userLocation, userId, gpsAccuracy }: NowPanelProps) {
+export default function NowPanel({ userLocation, selectedLocation, userId, gpsAccuracy }: NowPanelProps) {
   const { theme } = useTheme()
   const [posts, setPosts] = useState<NowPost[]>([])
   const [loading, setLoading] = useState(true)
@@ -37,7 +38,7 @@ export default function NowPanel({ userLocation, userId, gpsAccuracy }: NowPanel
       try {
         setLoading(true)
         const response = await fetch(
-          `/api/now?lat=${userLocation[1]}&lng=${userLocation[0]}`
+          `/api/now?lat=${userLocation[0]}&lng=${userLocation[1]}`
         )
         const data = await response.json()
         setPosts(data)
@@ -63,8 +64,8 @@ export default function NowPanel({ userLocation, userId, gpsAccuracy }: NowPanel
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          lat: userLocation[1],
-          lng: userLocation[0],
+          lat: userLocation[0],
+          lng: userLocation[1],
           content: inputValue,
           user_id: userId,
         }),
@@ -72,7 +73,7 @@ export default function NowPanel({ userLocation, userId, gpsAccuracy }: NowPanel
       setInputValue('')
       // Refetch posts
       const response = await fetch(
-        `/api/now?lat=${userLocation[1]}&lng=${userLocation[0]}`
+        `/api/now?lat=${userLocation[0]}&lng=${userLocation[1]}`
       )
       const data = await response.json()
       setPosts(data)
@@ -105,12 +106,13 @@ export default function NowPanel({ userLocation, userId, gpsAccuracy }: NowPanel
 
   const getDistance = (lat: number, lng: number) => {
     if (!userLocation) return '?'
-    const dLat = (lat - userLocation[1]) * 111 // Rough km conversion
-    const dLng = (lng - userLocation[0]) * 111 * Math.cos((lat * Math.PI) / 180)
+    const dLat = (lat - userLocation[0]) * 111 // Rough km conversion
+    const dLng = (lng - userLocation[1]) * 111 * Math.cos((lat * Math.PI) / 180)
     const km = Math.sqrt(dLat * dLat + dLng * dLng)
     const m = km * 1000
     return m < 1000 ? `${Math.round(m)}m` : `${km.toFixed(1)}km`
   }
+
 
   return (
     <div className="space-y-4 pt-1">

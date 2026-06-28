@@ -19,20 +19,23 @@ interface RhythmData {
 
 interface RhythmPanelProps {
   userLocation: [number, number] | null
+  selectedLocation: [number, number] | null
 }
 
-export default function RhythmPanel({ userLocation }: RhythmPanelProps) {
+export default function RhythmPanel({ userLocation, selectedLocation }: RhythmPanelProps) {
   const [data, setData] = useState<RhythmData | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const targetLocation = selectedLocation || userLocation
+
   useEffect(() => {
-    if (!userLocation) return
+    if (!targetLocation) return
 
     const fetchData = async () => {
       try {
         setLoading(true)
         const response = await fetch(
-          `/api/rhythm?lat=${userLocation[1]}&lng=${userLocation[0]}`
+          `/api/rhythm?lat=${targetLocation[0]}&lng=${targetLocation[1]}`
         )
         const rhythmData = await response.json()
         setData(rhythmData)
@@ -44,7 +47,8 @@ export default function RhythmPanel({ userLocation }: RhythmPanelProps) {
     }
 
     fetchData()
-  }, [userLocation])
+  }, [selectedLocation, userLocation])
+
 
   // Find busiest time of week
   const getMostAliveTime = () => {

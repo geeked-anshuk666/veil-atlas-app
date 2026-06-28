@@ -11,6 +11,7 @@
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.600.0",
     "@aws-sdk/lib-dynamodb": "^3.600.0",
+    "@aws-sdk/rds-signer": "^3.1075.0",
     "@base-ui/react": "^1.5.0",
     "@types/leaflet": "^1.9.21",
     "@vercel/analytics": "1.6.1",

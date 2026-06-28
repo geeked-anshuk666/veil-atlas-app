@@ -13,6 +13,7 @@ interface TruthData {
 
 interface TruthPanelProps {
   userLocation: [number, number] | null
+  selectedLocation: [number, number] | null
   userId: string
 }
 
@@ -23,19 +24,21 @@ const incidentTypes = [
   'Exclusion',
 ]
 
-export default function TruthPanel({ userLocation, userId }: TruthPanelProps) {
+export default function TruthPanel({ userLocation, selectedLocation, userId }: TruthPanelProps) {
   const [data, setData] = useState<TruthData | null>(null)
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
 
+  const targetLocation = selectedLocation || userLocation
+
   useEffect(() => {
-    if (!userLocation) return
+    if (!targetLocation) return
 
     const fetchData = async () => {
       try {
         setLoading(true)
         const response = await fetch(
-          `/api/truth?lat=${userLocation[1]}&lng=${userLocation[0]}`
+          `/api/truth?lat=${targetLocation[0]}&lng=${targetLocation[1]}`
         )
         const truthData = await response.json()
         setData(truthData)
@@ -47,7 +50,7 @@ export default function TruthPanel({ userLocation, userId }: TruthPanelProps) {
     }
 
     fetchData()
-  }, [userLocation])
+  }, [selectedLocation, userLocation])
 
   const handleSubmitIncident = async (
     type: string,
@@ -60,8 +63,8 @@ export default function TruthPanel({ userLocation, userId }: TruthPanelProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          lat: userLocation[1],
-          lng: userLocation[0],
+          lat: userLocation[0],
+          lng: userLocation[1],
           incident_type: type,
           time_of_day: timeOfDay,
           user_id: userId,
@@ -70,7 +73,7 @@ export default function TruthPanel({ userLocation, userId }: TruthPanelProps) {
       setShowModal(false)
       // Refetch
       const response = await fetch(
-        `/api/truth?lat=${userLocation[1]}&lng=${userLocation[0]}`
+        `/api/truth?lat=${targetLocation![0]}&lng=${targetLocation![1]}`
       )
       const truthData = await response.json()
       setData(truthData)
@@ -78,6 +81,7 @@ export default function TruthPanel({ userLocation, userId }: TruthPanelProps) {
       console.error('[v0] Error submitting incident:', error)
     }
   }
+
 
   const getMaxCount = (breakdown: TruthData['breakdown']) => {
     return Math.max(...breakdown.map((b) => b.count), 1)

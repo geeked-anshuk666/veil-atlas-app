@@ -4,12 +4,13 @@ import { useState } from 'react'
 import { useTheme } from '@/lib/theme-context'
 
 const layers = [
-  { id: 'now', icon: '⚡', label: 'Now', color: '#3b82f6' },
-  { id: 'feel', icon: '🌡', label: 'Feel', color: '#f59e0b' },
-  { id: 'truth', icon: '👁', label: 'Truth', color: '#ef4444' },
-  { id: 'memory', icon: '🕰', label: 'Memory', color: '#a855f7' },
-  { id: 'rhythm', icon: '〜', label: 'Rhythm', color: '#22c55e' },
+  { id: 'now', icon: '⚡', label: 'Now', description: 'Live proximity signals within 500m (expire in 30m)', color: '#3b82f6' },
+  { id: 'feel', icon: '🌡', label: 'Feel', description: 'Collective emotional weather & confessions', color: '#f59e0b' },
+  { id: 'truth', icon: '👁', label: 'Truth', description: 'Documented safety & exclusion incidents', color: '#ef4444' },
+  { id: 'memory', icon: '🕰', label: 'Memory', description: 'Local memories & presence-gated Echoes', color: '#a855f7' },
+  { id: 'rhythm', icon: '〜', label: 'Rhythm', description: 'Weekly neighborhood breathing patterns', color: '#22c55e' },
 ] as const
+
 
 interface LeftNavigationProps {
   activeLayer: 'now' | 'feel' | 'truth' | 'memory' | 'rhythm'
@@ -70,7 +71,9 @@ export default function LeftNavigation({ activeLayer, onLayerChange }: LeftNavig
             <button
               key={layer.id}
               onClick={() => handleLayerClick(layer.id)}
+              title={layer.description}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300 ${
+
                 activeLayer === layer.id
                   ? 'scale-110 md:scale-100'
                   : 'scale-100 hover:scale-105'

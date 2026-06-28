@@ -20,10 +20,11 @@ interface Echo {
 
 interface MemoryPanelProps {
   userLocation: [number, number] | null
+  selectedLocation: [number, number] | null
   userId: string
 }
 
-export default function MemoryPanel({ userLocation, userId }: MemoryPanelProps) {
+export default function MemoryPanel({ userLocation, selectedLocation, userId }: MemoryPanelProps) {
   const [memories, setMemories] = useState<Memory[]>([])
   const [echoData, setEchoData] = useState<Echo | null>(null)
   const [loading, setLoading] = useState(true)
@@ -35,15 +36,17 @@ export default function MemoryPanel({ userLocation, userId }: MemoryPanelProps) 
   const [echoFor, setEchoFor] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
+  const targetLocation = selectedLocation || userLocation
+
   useEffect(() => {
-    if (!userLocation) return
+    if (!targetLocation) return
 
     const fetchData = async () => {
       try {
         setLoading(true)
         const [memRes, echoRes] = await Promise.all([
-          fetch(`/api/memory?lat=${userLocation[1]}&lng=${userLocation[0]}`),
-          fetch(`/api/echo?lat=${userLocation[1]}&lng=${userLocation[0]}`),
+          fetch(`/api/memory?lat=${targetLocation[0]}&lng=${targetLocation[1]}`),
+          fetch(`/api/echo?lat=${targetLocation[0]}&lng=${targetLocation[1]}`),
         ])
         const memData = await memRes.json()
         const echData = await echoRes.json()
@@ -57,7 +60,7 @@ export default function MemoryPanel({ userLocation, userId }: MemoryPanelProps) 
     }
 
     fetchData()
-  }, [userLocation])
+  }, [selectedLocation, userLocation])
 
   const handleSubmitMemory = async () => {
     if (!memoryText.trim() || !userLocation) return
@@ -68,8 +71,8 @@ export default function MemoryPanel({ userLocation, userId }: MemoryPanelProps) 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          lat: userLocation[1],
-          lng: userLocation[0],
+          lat: userLocation[0],
+          lng: userLocation[1],
           content: memoryText,
           year_label: memoryYear || 'unknown',
           user_id: userId,
@@ -80,7 +83,7 @@ export default function MemoryPanel({ userLocation, userId }: MemoryPanelProps) 
       setShowNewMemory(false)
       // Refetch
       const res = await fetch(
-        `/api/memory?lat=${userLocation[1]}&lng=${userLocation[0]}`
+        `/api/memory?lat=${targetLocation![0]}&lng=${targetLocation![1]}`
       )
       const data = await res.json()
       setMemories(data)
@@ -100,8 +103,8 @@ export default function MemoryPanel({ userLocation, userId }: MemoryPanelProps) 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          lat: userLocation[1],
-          lng: userLocation[0],
+          lat: userLocation[0],
+          lng: userLocation[1],
           content: echoText,
           for_whom: echoFor || undefined,
         }),
@@ -111,7 +114,7 @@ export default function MemoryPanel({ userLocation, userId }: MemoryPanelProps) 
       setShowNewEcho(false)
       // Refetch
       const res = await fetch(
-        `/api/echo?lat=${userLocation[1]}&lng=${userLocation[0]}`
+        `/api/echo?lat=${targetLocation![0]}&lng=${targetLocation![1]}`
       )
       const data = await res.json()
       setEchoData(data)
@@ -121,6 +124,7 @@ export default function MemoryPanel({ userLocation, userId }: MemoryPanelProps) 
       setSubmitting(false)
     }
   }
+
 
   if (loading) {
     return (

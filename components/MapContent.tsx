@@ -164,14 +164,15 @@ export default function MapContent({
         {/* User location marker */}
         <CircleMarker
           center={new LatLng(lat, lng)}
-          radius={6}
-          fillOpacity={0.95}
+          radius={7}
+          fillOpacity={1}
           color="white"
-          fillColor="white"
-          weight={0}
+          fillColor="#00f2fe"
+          weight={2}
           className="user-marker"
         />
       </MapContainer>
+
 
       {/* CSS animation for pulsing dots */}
       <style>{`

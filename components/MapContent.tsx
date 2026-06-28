@@ -1,6 +1,6 @@
 'use client'
 
-import { MapContainer, TileLayer, CircleMarker, Popup, useMapEvent } from 'react-leaflet'
+import { MapContainer, TileLayer, CircleMarker, Popup, useMapEvent, useMap } from 'react-leaflet'
 import { LatLng } from 'leaflet'
 import { useTheme } from '@/lib/theme-context'
 import 'leaflet/dist/leaflet.css'
@@ -29,7 +29,7 @@ function MapClickHandler({ onMapClick, activeLayer }: { onMapClick?: (lat: numbe
 
 // Helper component to handle flyTo for selected locations
 function FlyToLocation({ selectedLocation }: { selectedLocation: [number, number] | null }) {
-  const map = require('react-leaflet').useMap()
+  const map = useMap()
   
   useMapEvent('click', () => {
     // Map click event - this ensures map events are active
@@ -43,6 +43,7 @@ function FlyToLocation({ selectedLocation }: { selectedLocation: [number, number
   
   return null
 }
+
 
 export default function MapContent({
   activeLayer,

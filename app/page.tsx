@@ -15,6 +15,7 @@ import FeelPanel from '@/components/layers/FeelPanel'
 import TruthPanel from '@/components/layers/TruthPanel'
 import MemoryPanel from '@/components/layers/MemoryPanel'
 import RhythmPanel from '@/components/layers/RhythmPanel'
+import OnboardingModal from '@/components/OnboardingModal'
 import type { LayerType, Post, Memory } from '@/types'
 
 export default function HomePage() {
@@ -30,6 +31,7 @@ export default function HomePage() {
   const [searchDropdownOpen, setSearchDropdownOpen] = useState(false)
   const [nowPosts, setNowPosts] = useState<Post[]>([])
   const [memories, setMemories] = useState<Memory[]>([])
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   // Initialize user ID and geolocation
   useEffect(() => {
@@ -42,6 +44,12 @@ export default function HomePage() {
       localStorage.setItem('veil_user_id', id)
     }
     setUserId(id)
+
+    const onboarded = localStorage.getItem('veil_onboarded')
+    if (onboarded !== 'true') {
+      setShowOnboarding(true)
+    }
+
 
     // Get geolocation
     if (navigator.geolocation) {
@@ -206,21 +214,27 @@ export default function HomePage() {
         }
       >
         {activeLayer === 'now' && (
-          <NowPanel userLocation={userLocation} userId={userId} gpsAccuracy={gpsAccuracy || undefined} />
+          <NowPanel userLocation={userLocation} selectedLocation={selectedLocation} userId={userId} gpsAccuracy={gpsAccuracy || undefined} />
         )}
         {activeLayer === 'feel' && (
-          <FeelPanel userLocation={userLocation} userId={userId} />
+          <FeelPanel userLocation={userLocation} selectedLocation={selectedLocation} userId={userId} />
         )}
         {activeLayer === 'truth' && (
-          <TruthPanel userLocation={userLocation} userId={userId} />
+          <TruthPanel userLocation={userLocation} selectedLocation={selectedLocation} userId={userId} />
         )}
         {activeLayer === 'memory' && (
-          <MemoryPanel userLocation={userLocation} userId={userId} />
+          <MemoryPanel userLocation={userLocation} selectedLocation={selectedLocation} userId={userId} />
         )}
         {activeLayer === 'rhythm' && (
-          <RhythmPanel userLocation={userLocation} />
+          <RhythmPanel userLocation={userLocation} selectedLocation={selectedLocation} />
         )}
       </BottomSheet>
+
+      {/* Onboarding Modal Overlay */}
+      {showOnboarding && (
+        <OnboardingModal onClose={() => setShowOnboarding(false)} />
+      )}
     </div>
+
   )
 }

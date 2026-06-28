@@ -9,6 +9,7 @@ interface MapProps {
   selectedLocation: [number, number] | null
   nowPosts: Array<{ id: string; lat: number; lng: number; content: string }>
   memories: Array<{ id: string; lat: number; lng: number; year_label: string }>
+  feelConfessions: Array<{ id: string; lat: number; lng: number; content: string }>
   onMapClick?: (lat: number, lng: number) => void
 }
 
@@ -20,6 +21,7 @@ export default function Map({
   selectedLocation,
   nowPosts,
   memories,
+  feelConfessions,
   onMapClick,
 }: MapProps) {
   const [mounted, setMounted] = useState(false)
@@ -52,8 +54,10 @@ export default function Map({
         selectedLocation={selectedLocation}
         nowPosts={nowPosts}
         memories={memories}
+        feelConfessions={feelConfessions}
         onMapClick={onMapClick}
       />
     </Suspense>
   )
 }
+

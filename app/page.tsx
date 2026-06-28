@@ -31,6 +31,7 @@ export default function HomePage() {
   const [searchDropdownOpen, setSearchDropdownOpen] = useState(false)
   const [nowPosts, setNowPosts] = useState<Post[]>([])
   const [memories, setMemories] = useState<Memory[]>([])
+  const [feelConfessions, setFeelConfessions] = useState<any[]>([])
   const [showOnboarding, setShowOnboarding] = useState(false)
 
   // Initialize user ID and geolocation
@@ -93,7 +94,7 @@ export default function HomePage() {
     return () => clearInterval(interval)
   }, [userLocation])
 
-  // Fetch memories when user location changes
+  // Fetch memories and feel confessions when user location changes
   useEffect(() => {
     if (!userLocation) return
 
@@ -107,7 +108,18 @@ export default function HomePage() {
       }
     }
 
+    const fetchConfessions = async () => {
+      try {
+        const res = await fetch(`/api/feel/pins?lat=${userLocation[0]}&lng=${userLocation[1]}`)
+        const data = await res.json()
+        setFeelConfessions(data.pins || [])
+      } catch (error) {
+        console.error('[v0] Failed to fetch confessions:', error)
+      }
+    }
+
     fetchMemories()
+    fetchConfessions()
   }, [userLocation])
 
   // Open sheet when layer changes
@@ -191,8 +203,10 @@ export default function HomePage() {
         selectedLocation={selectedLocation}
         nowPosts={nowPosts}
         memories={memories}
+        feelConfessions={feelConfessions}
         onMapClick={handleMapClick}
       />
+
 
       {/* Layer Selector - will be hidden, kept for compatibility */}
       <LayerSelector activeLayer={activeLayer} onLayerChange={setActiveLayer} />

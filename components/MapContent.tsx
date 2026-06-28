@@ -11,8 +11,10 @@ interface MapContentProps {
   selectedLocation: [number, number] | null
   nowPosts: Array<{ id: string; lat: number; lng: number; content: string }>
   memories: Array<{ id: string; lat: number; lng: number; year_label: string }>
+  feelConfessions: Array<{ id: string; lat: number; lng: number; content: string }>
   onMapClick?: (lat: number, lng: number) => void
 }
+
 
 const CARTODB_DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
 const CARTODB_LIGHT_TILES = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
@@ -51,8 +53,10 @@ export default function MapContent({
   selectedLocation,
   nowPosts,
   memories,
+  feelConfessions,
   onMapClick,
 }: MapContentProps) {
+
   const { theme } = useTheme()
   const [lat, lng] = userLocation
 
@@ -106,6 +110,28 @@ export default function MapContent({
             dashArray="5,5"
           />
         )}
+        {activeLayer === 'feel' &&
+          feelConfessions &&
+          feelConfessions.map((c) => (
+            <CircleMarker
+              key={c.id}
+              center={new LatLng(c.lat, c.lng)}
+              radius={8}
+              fillOpacity={0.8}
+              color="#fbbf24"
+              fillColor="#fbbf24"
+              weight={2}
+              className="pulse-marker"
+              eventHandlers={{
+                click: () => {
+                  onMapClick?.(c.lat, c.lng)
+                },
+              }}
+            >
+              <Popup>&ldquo;{c.content}&rdquo;</Popup>
+            </CircleMarker>
+          ))}
+
 
         {/* Truth layer - red clusters sized by incident count */}
         {activeLayer === 'truth' && (

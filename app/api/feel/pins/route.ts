@@ -7,13 +7,21 @@ export async function GET(request: NextRequest) {
   const lng = parseFloat(searchParams.get('lng') || '0')
 
   const pins = await sql`
-    SELECT id, content, created_at
+    SELECT id, content, lat, lng, created_at
     FROM static_pins
-    WHERE haversine(${lat}, ${lng}, lat, lng) <= radius_m
+    WHERE haversine(${lat}, ${lng}, lat, lng) <= 1000
     ORDER BY created_at DESC
-    LIMIT 3
   `
-  return NextResponse.json(pins[0] || null)
+  return NextResponse.json({
+    pins: pins.map((p) => ({
+      id: p.id,
+      content: p.content,
+      lat: Number(p.lat),
+      lng: Number(p.lng),
+      created_at: p.created_at,
+    })),
+  })
+
 }
 
 export async function POST(request: NextRequest) {

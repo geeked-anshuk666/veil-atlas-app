@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   `
 
   const list = await sql`
-    SELECT id, incident_type as type, time_of_day, created_at,
+    SELECT id, incident_type as type, time_of_day, lat, lng, created_at,
       haversine(${lat}, ${lng}, lat, lng) as distance
     FROM incidents
     WHERE haversine(${lat}, ${lng}, lat, lng) < 800
@@ -32,10 +32,13 @@ export async function GET(request: NextRequest) {
       id: item.id,
       type: item.type,
       time_of_day: item.time_of_day,
+      lat: Number(item.lat),
+      lng: Number(item.lng),
       created_at: item.created_at,
       distance: Number(item.distance),
     })),
   })
+
 
 }
 

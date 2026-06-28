@@ -32,7 +32,9 @@ export default function HomePage() {
   const [nowPosts, setNowPosts] = useState<Post[]>([])
   const [memories, setMemories] = useState<Memory[]>([])
   const [feelConfessions, setFeelConfessions] = useState<any[]>([])
+  const [truthIncidents, setTruthIncidents] = useState<any[]>([])
   const [showOnboarding, setShowOnboarding] = useState(false)
+
 
   // Initialize user ID and geolocation
   useEffect(() => {
@@ -94,7 +96,7 @@ export default function HomePage() {
     return () => clearInterval(interval)
   }, [userLocation])
 
-  // Fetch memories and feel confessions when user location changes
+  // Fetch memories, confessions, and incidents when user location changes
   useEffect(() => {
     if (!userLocation) return
 
@@ -118,9 +120,42 @@ export default function HomePage() {
       }
     }
 
+    const fetchIncidents = async () => {
+      try {
+        const res = await fetch(`/api/truth?lat=${userLocation[0]}&lng=${userLocation[1]}`)
+        const data = await res.json()
+        setTruthIncidents(data.list || [])
+      } catch (error) {
+        console.error('[v0] Failed to fetch truth incidents:', error)
+      }
+    }
+
     fetchMemories()
     fetchConfessions()
+    fetchIncidents()
   }, [userLocation])
+
+  // Trigger check-in when user location is resolved
+  useEffect(() => {
+    if (!userLocation || !userId) return
+    const doCheckin = async () => {
+      try {
+        await fetch('/api/rhythm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lat: userLocation[0],
+            lng: userLocation[1],
+            user_id: userId
+          })
+        })
+      } catch (error) {
+        console.error('[v0] Failed to log check-in:', error)
+      }
+    }
+    doCheckin()
+  }, [userLocation, userId])
+
 
   // Open sheet when layer changes
   useEffect(() => {
@@ -204,8 +239,10 @@ export default function HomePage() {
         nowPosts={nowPosts}
         memories={memories}
         feelConfessions={feelConfessions}
+        truthIncidents={truthIncidents}
         onMapClick={handleMapClick}
       />
+
 
 
       {/* Layer Selector - will be hidden, kept for compatibility */}

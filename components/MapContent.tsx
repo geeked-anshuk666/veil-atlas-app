@@ -12,8 +12,10 @@ interface MapContentProps {
   nowPosts: Array<{ id: string; lat: number; lng: number; content: string }>
   memories: Array<{ id: string; lat: number; lng: number; year_label: string }>
   feelConfessions: Array<{ id: string; lat: number; lng: number; content: string }>
+  truthIncidents: Array<{ id: string; lat: number; lng: number; type: string; time_of_day: string }>
   onMapClick?: (lat: number, lng: number) => void
 }
+
 
 
 const CARTODB_DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
@@ -54,8 +56,10 @@ export default function MapContent({
   nowPosts,
   memories,
   feelConfessions,
+  truthIncidents,
   onMapClick,
 }: MapContentProps) {
+
 
   const { theme } = useTheme()
   const [lat, lng] = userLocation
@@ -133,19 +137,29 @@ export default function MapContent({
           ))}
 
 
-        {/* Truth layer - red clusters sized by incident count */}
-        {activeLayer === 'truth' && (
-          <CircleMarker
-            center={new LatLng(lat, lng)}
-            radius={15}
-            fillOpacity={0.6}
-            color="#ef4444"
-            fillColor="#ef4444"
-            weight={2}
-          >
-            <Popup>9 incidents in the past year</Popup>
-          </CircleMarker>
-        )}
+        {/* Truth layer - red incident markers */}
+        {activeLayer === 'truth' &&
+          truthIncidents &&
+          truthIncidents.map((incident) => (
+            <CircleMarker
+              key={incident.id}
+              center={new LatLng(incident.lat, incident.lng)}
+              radius={8}
+              fillOpacity={0.8}
+              color="#ef4444"
+              fillColor="#ef4444"
+              weight={2}
+              className="pulse-marker"
+              eventHandlers={{
+                click: () => {
+                  onMapClick?.(incident.lat, incident.lng)
+                },
+              }}
+            >
+              <Popup>{incident.type} ({incident.time_of_day})</Popup>
+            </CircleMarker>
+          ))}
+
 
         {/* Memory layer - purple markers at memory coordinates */}
         {activeLayer === 'memory' &&

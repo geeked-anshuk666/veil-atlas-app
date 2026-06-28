@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Dynamic } from 'next/dynamic'
 import { useTheme } from '@/lib/theme-context'
+
 import { getBgClass } from '@/lib/theme-colors'
 import LeftNavigation from '@/components/LeftNavigation'
 import LocationGating from '@/components/LocationGating'

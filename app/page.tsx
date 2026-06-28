@@ -79,20 +79,72 @@ export default function HomePage() {
     }
   }, [])
 
+  const fetchNowPosts = async () => {
+    if (!userLocation) return
+    try {
+      const res = await fetch(`/api/now?lat=${userLocation[0]}&lng=${userLocation[1]}`)
+      const data = await res.json()
+      setNowPosts(data)
+    } catch (error) {
+      console.error('[v0] Failed to fetch now posts:', error)
+    }
+  }
+
+  const fetchMemories = async () => {
+    if (!userLocation) return
+    try {
+      const res = await fetch(`/api/memory?lat=${userLocation[0]}&lng=${userLocation[1]}`)
+      const data = await res.json()
+      setMemories(data)
+    } catch (error) {
+      console.error('[v0] Failed to fetch memories:', error)
+    }
+  }
+
+  const fetchConfessions = async () => {
+    if (!userLocation) return
+    try {
+      const res = await fetch(`/api/feel/pins?lat=${userLocation[0]}&lng=${userLocation[1]}`)
+      const data = await res.json()
+      setFeelConfessions(data.pins || [])
+    } catch (error) {
+      console.error('[v0] Failed to fetch confessions:', error)
+    }
+  }
+
+  const fetchIncidents = async () => {
+    if (!userLocation) return
+    try {
+      const res = await fetch(`/api/truth?lat=${userLocation[0]}&lng=${userLocation[1]}`)
+      const data = await res.json()
+      setTruthIncidents(data.list || [])
+    } catch (error) {
+      console.error('[v0] Failed to fetch truth incidents:', error)
+    }
+  }
+
+  const fetchMoods = async () => {
+    if (!userLocation) return
+    try {
+      const res = await fetch(`/api/feel?lat=${userLocation[0]}&lng=${userLocation[1]}`)
+      const data = await res.json()
+      setFeelMoods(data.list || [])
+    } catch (error) {
+      console.error('[v0] Failed to fetch moods:', error)
+    }
+  }
+
+  const handleRefreshMapData = () => {
+    fetchNowPosts()
+    fetchMemories()
+    fetchConfessions()
+    fetchIncidents()
+    fetchMoods()
+  }
+
   // Fetch now posts when user location changes
   useEffect(() => {
     if (!userLocation) return
-
-    const fetchNowPosts = async () => {
-      try {
-        const res = await fetch(`/api/now?lat=${userLocation[0]}&lng=${userLocation[1]}`)
-        const data = await res.json()
-        setNowPosts(data)
-      } catch (error) {
-        console.error('[v0] Failed to fetch now posts:', error)
-      }
-    }
-
     fetchNowPosts()
     const interval = setInterval(fetchNowPosts, 30000)
     return () => clearInterval(interval)
@@ -101,52 +153,12 @@ export default function HomePage() {
   // Fetch memories, confessions, and incidents when user location changes
   useEffect(() => {
     if (!userLocation) return
-
-    const fetchMemories = async () => {
-      try {
-        const res = await fetch(`/api/memory?lat=${userLocation[0]}&lng=${userLocation[1]}`)
-        const data = await res.json()
-        setMemories(data)
-      } catch (error) {
-        console.error('[v0] Failed to fetch memories:', error)
-      }
-    }
-
-    const fetchConfessions = async () => {
-      try {
-        const res = await fetch(`/api/feel/pins?lat=${userLocation[0]}&lng=${userLocation[1]}`)
-        const data = await res.json()
-        setFeelConfessions(data.pins || [])
-      } catch (error) {
-        console.error('[v0] Failed to fetch confessions:', error)
-      }
-    }
-
-    const fetchIncidents = async () => {
-      try {
-        const res = await fetch(`/api/truth?lat=${userLocation[0]}&lng=${userLocation[1]}`)
-        const data = await res.json()
-        setTruthIncidents(data.list || [])
-      } catch (error) {
-        console.error('[v0] Failed to fetch truth incidents:', error)
-      }
-    }
-
-    const fetchMoods = async () => {
-      try {
-        const res = await fetch(`/api/feel?lat=${userLocation[0]}&lng=${userLocation[1]}`)
-        const data = await res.json()
-        setFeelMoods(data.list || [])
-      } catch (error) {
-        console.error('[v0] Failed to fetch moods:', error)
-      }
-    }
-
     fetchMemories()
     fetchConfessions()
     fetchIncidents()
     fetchMoods()
   }, [userLocation])
+
 
 
   // Trigger check-in when user location is resolved
@@ -281,17 +293,18 @@ export default function HomePage() {
         }
       >
         {activeLayer === 'now' && (
-          <NowPanel userLocation={userLocation} selectedLocation={selectedLocation} userId={userId} gpsAccuracy={gpsAccuracy || undefined} />
+          <NowPanel userLocation={userLocation} selectedLocation={selectedLocation} userId={userId} gpsAccuracy={gpsAccuracy || undefined} onRefreshMapData={handleRefreshMapData} />
         )}
         {activeLayer === 'feel' && (
-          <FeelPanel userLocation={userLocation} selectedLocation={selectedLocation} userId={userId} />
+          <FeelPanel userLocation={userLocation} selectedLocation={selectedLocation} userId={userId} onRefreshMapData={handleRefreshMapData} />
         )}
         {activeLayer === 'truth' && (
-          <TruthPanel userLocation={userLocation} selectedLocation={selectedLocation} userId={userId} />
+          <TruthPanel userLocation={userLocation} selectedLocation={selectedLocation} userId={userId} onRefreshMapData={handleRefreshMapData} />
         )}
         {activeLayer === 'memory' && (
-          <MemoryPanel userLocation={userLocation} selectedLocation={selectedLocation} userId={userId} />
+          <MemoryPanel userLocation={userLocation} selectedLocation={selectedLocation} userId={userId} onRefreshMapData={handleRefreshMapData} />
         )}
+
         {activeLayer === 'rhythm' && (
           <RhythmPanel userLocation={userLocation} selectedLocation={selectedLocation} />
         )}

@@ -8,9 +8,10 @@ interface MemoryPanelProps {
   userLocation: [number, number] | null
   selectedLocation: [number, number] | null
   userId: string
+  onRefreshMapData?: () => void
 }
 
-export default function MemoryPanel({ userLocation, selectedLocation, userId }: MemoryPanelProps) {
+export default function MemoryPanel({ userLocation, selectedLocation, userId, onRefreshMapData }: MemoryPanelProps) {
   const { theme } = useTheme()
   const [memories, setMemories] = useState<Memory[]>([])
   const [echoData, setEchoData] = useState<Echo | null>(null)
@@ -74,6 +75,7 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId }: 
       )
       const data = await res.json()
       setMemories(data)
+      onRefreshMapData?.()
     } catch (error) {
       console.error('[v0] Error submitting memory:', error)
     } finally {
@@ -105,12 +107,14 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId }: 
       )
       const data = await res.json()
       setEchoData(data)
+      onRefreshMapData?.()
     } catch (error) {
       console.error('[v0] Error submitting echo:', error)
     } finally {
       setSubmitting(false)
     }
   }
+
 
   const getDistance = (lat: number, lng: number) => {
     if (!userLocation) return 9999

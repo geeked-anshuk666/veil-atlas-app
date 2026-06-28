@@ -25,6 +25,7 @@ interface TruthPanelProps {
   userLocation: [number, number] | null
   selectedLocation: [number, number] | null
   userId: string
+  onRefreshMapData?: () => void
 }
 
 const incidentTypes = [
@@ -34,7 +35,7 @@ const incidentTypes = [
   'Exclusion',
 ]
 
-export default function TruthPanel({ userLocation, selectedLocation, userId }: TruthPanelProps) {
+export default function TruthPanel({ userLocation, selectedLocation, userId, onRefreshMapData }: TruthPanelProps) {
   const { theme } = useTheme()
   const [data, setData] = useState<TruthData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -88,10 +89,12 @@ export default function TruthPanel({ userLocation, selectedLocation, userId }: T
       )
       const truthData = await response.json()
       setData(truthData)
+      onRefreshMapData?.()
     } catch (error) {
       console.error('[v0] Error submitting incident:', error)
     }
   }
+
 
   const getRelativeTime = (dateStr: string) => {
     const date = new Date(dateStr)

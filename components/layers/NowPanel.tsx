@@ -19,9 +19,11 @@ interface NowPanelProps {
   selectedLocation: [number, number] | null
   userId: string
   gpsAccuracy?: number
+  onRefreshMapData?: () => void
 }
 
-export default function NowPanel({ userLocation, selectedLocation, userId, gpsAccuracy }: NowPanelProps) {
+export default function NowPanel({ userLocation, selectedLocation, userId, gpsAccuracy, onRefreshMapData }: NowPanelProps) {
+
   const { theme } = useTheme()
   const [posts, setPosts] = useState<NowPost[]>([])
   const [loading, setLoading] = useState(true)
@@ -77,12 +79,14 @@ export default function NowPanel({ userLocation, selectedLocation, userId, gpsAc
       )
       const data = await response.json()
       setPosts(data)
+      onRefreshMapData?.()
     } catch (error) {
       console.error('[v0] Error submitting post:', error)
     } finally {
       setSubmitting(false)
     }
   }
+
 
   const getTimeAgo = (dateStr: string) => {
     const date = new Date(dateStr)

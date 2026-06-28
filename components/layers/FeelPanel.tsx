@@ -7,6 +7,7 @@ interface FeelPanelProps {
   userLocation: [number, number] | null
   selectedLocation: [number, number] | null
   userId: string
+  onRefreshMapData?: () => void
 }
 
 const emotions = [
@@ -28,7 +29,7 @@ interface ConfessionData {
   created_at: string
 }
 
-export default function FeelPanel({ userLocation, selectedLocation, userId }: FeelPanelProps) {
+export default function FeelPanel({ userLocation, selectedLocation, userId, onRefreshMapData }: FeelPanelProps) {
   const { theme } = useTheme()
   const [feel, setFeel] = useState<FeelData | null>(null)
   const [confessions, setConfessions] = useState<ConfessionData[]>([])
@@ -84,10 +85,12 @@ export default function FeelPanel({ userLocation, selectedLocation, userId }: Fe
       const res = await fetch(`/api/feel?lat=${targetLocation![0]}&lng=${targetLocation![1]}`)
       const data = await res.json()
       setFeel(data)
+      onRefreshMapData?.()
     } catch (error) {
       console.error('[v0] Error submitting emotion:', error)
     }
   }
+
 
   const handleSubmitConfession = async () => {
     if (!newConfessionText.trim() || !userLocation) return
@@ -111,12 +114,14 @@ export default function FeelPanel({ userLocation, selectedLocation, userId }: Fe
       )
       const data = await res.json()
       setConfessions(data.pins || [])
+      onRefreshMapData?.()
     } catch (error) {
       console.error('[v0] Error submitting confession:', error)
     } finally {
       setSubmitting(false)
     }
   }
+
 
   const getRelativeTime = (dateStr: string) => {
     const date = new Date(dateStr)

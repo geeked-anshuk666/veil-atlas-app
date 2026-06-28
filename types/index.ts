@@ -22,3 +22,13 @@ export interface Rhythm {
   hourly: Array<{ hour: number; count: number }>
   weekly: Array<{ day: number; morning: number; afternoon: number; evening: number }>
 }
+
+export interface Echo {
+  id: string
+  content: string
+  lat: number
+  lng: number
+  for_whom?: string
+  created_at: string
+}
+

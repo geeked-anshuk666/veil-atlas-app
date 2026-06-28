@@ -28,7 +28,7 @@ export default function NowPanel({ userLocation, selectedLocation, userId, gpsAc
   const [inputValue, setInputValue] = useState('')
   const [submitting, setSubmitting] = useState(false)
   
-  const hasWeakGPS = gpsAccuracy && gpsAccuracy > 100
+  const hasWeakGPS = !!(gpsAccuracy && gpsAccuracy > 100)
 
   // Fetch posts on mount and every 30 seconds
   useEffect(() => {

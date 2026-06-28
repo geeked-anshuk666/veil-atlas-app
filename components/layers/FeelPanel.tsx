@@ -67,7 +67,7 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, onRe
   }, [selectedLocation, userLocation])
 
   const handleEmotion = async (emotion: string) => {
-    if (!userLocation) return
+    if (!targetLocation) return
     setActiveUserEmotion(emotion)
 
     try {
@@ -75,14 +75,14 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, onRe
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          lat: userLocation[0],
-          lng: userLocation[1],
+          lat: targetLocation[0],
+          lng: targetLocation[1],
           emotion,
           user_id: userId,
         }),
       })
       // Refetch feel data
-      const res = await fetch(`/api/feel?lat=${targetLocation![0]}&lng=${targetLocation![1]}`)
+      const res = await fetch(`/api/feel?lat=${targetLocation[0]}&lng=${targetLocation[1]}`)
       const data = await res.json()
       setFeel(data)
       onRefreshMapData?.()
@@ -92,8 +92,9 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, onRe
   }
 
 
+
   const handleSubmitConfession = async () => {
-    if (!newConfessionText.trim() || !userLocation) return
+    if (!newConfessionText.trim() || !targetLocation) return
 
     setSubmitting(true)
     try {
@@ -101,8 +102,8 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, onRe
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          lat: userLocation[0],
-          lng: userLocation[1],
+          lat: targetLocation[0],
+          lng: targetLocation[1],
           content: newConfessionText,
         }),
       })
@@ -110,7 +111,7 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, onRe
       setShowNewConfession(false)
       // Refetch
       const res = await fetch(
-        `/api/feel/pins?lat=${targetLocation![0]}&lng=${targetLocation![1]}`
+        `/api/feel/pins?lat=${targetLocation[0]}&lng=${targetLocation[1]}`
       )
       const data = await res.json()
       setConfessions(data.pins || [])
@@ -121,6 +122,7 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, onRe
       setSubmitting(false)
     }
   }
+
 
 
   const getRelativeTime = (dateStr: string) => {

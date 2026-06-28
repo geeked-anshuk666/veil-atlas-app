@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTheme } from '@/lib/theme-context'
 
 import { getBgClass } from '@/lib/theme-colors'
@@ -36,13 +36,17 @@ export default function HomePage() {
   const [feelMoods, setFeelMoods] = useState<any[]>([])
   const [showOnboarding, setShowOnboarding] = useState(false)
 
+  // Use refs so callbacks always have latest values without stale closures
+  const userLocationRef = useRef<[number, number] | null>(null)
+  const selectedLocationRef = useRef<[number, number] | null>(null)
 
+  useEffect(() => { userLocationRef.current = userLocation }, [userLocation])
+  useEffect(() => { selectedLocationRef.current = selectedLocation }, [selectedLocation])
 
-  // Initialize user ID and geolocation
+  // --- INIT ---
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    // Get or create user ID
     let id = localStorage.getItem('veil_user_id')
     if (!id) {
       id = crypto.randomUUID()
@@ -51,12 +55,8 @@ export default function HomePage() {
     setUserId(id)
 
     const onboarded = localStorage.getItem('veil_onboarded')
-    if (onboarded !== 'true') {
-      setShowOnboarding(true)
-    }
+    if (onboarded !== 'true') setShowOnboarding(true)
 
-
-    // Get geolocation
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -67,139 +67,114 @@ export default function HomePage() {
           setIsGeolocating(false)
         },
         () => {
-          // User denied location or error occurred
           setHasLocationPermission(false)
           setIsGeolocating(false)
         }
       )
     } else {
-      // Geolocation not supported
       setHasLocationPermission(false)
       setIsGeolocating(false)
     }
   }, [])
 
-  const fetchNowPosts = async () => {
-    if (!userLocation) return
-    try {
-      const res = await fetch(`/api/now?lat=${userLocation[0]}&lng=${userLocation[1]}`)
-      const data = await res.json()
-      setNowPosts(data)
-    } catch (error) {
-      console.error('[v0] Failed to fetch now posts:', error)
-    }
-  }
+  // --- FETCH HELPERS — always read from refs for current values ---
 
-  const fetchMemories = async () => {
-    if (!userLocation) return
+  const fetchNowPosts = useCallback(async (center?: [number, number]) => {
+    const loc = center || userLocationRef.current
+    if (!loc) return
     try {
-      const res = await fetch(`/api/memory?lat=${userLocation[0]}&lng=${userLocation[1]}`)
+      const res = await fetch(`/api/now?lat=${loc[0]}&lng=${loc[1]}`)
       const data = await res.json()
-      setMemories(data)
-    } catch (error) {
-      console.error('[v0] Failed to fetch memories:', error)
-    }
-  }
+      setNowPosts(Array.isArray(data) ? data : [])
+    } catch (e) { console.error('[v0] Failed to fetch now posts:', e) }
+  }, [])
 
-  const fetchConfessions = async () => {
-    if (!userLocation) return
+  const fetchMemories = useCallback(async (center?: [number, number]) => {
+    const loc = center || selectedLocationRef.current || userLocationRef.current
+    if (!loc) return
     try {
-      const res = await fetch(`/api/feel/pins?lat=${userLocation[0]}&lng=${userLocation[1]}`)
+      const res = await fetch(`/api/memory?lat=${loc[0]}&lng=${loc[1]}`)
+      const data = await res.json()
+      setMemories(Array.isArray(data) ? data : [])
+    } catch (e) { console.error('[v0] Failed to fetch memories:', e) }
+  }, [])
+
+  const fetchConfessions = useCallback(async (center?: [number, number]) => {
+    const loc = center || selectedLocationRef.current || userLocationRef.current
+    if (!loc) return
+    try {
+      const res = await fetch(`/api/feel/pins?lat=${loc[0]}&lng=${loc[1]}`)
       const data = await res.json()
       setFeelConfessions(data.pins || [])
-    } catch (error) {
-      console.error('[v0] Failed to fetch confessions:', error)
-    }
-  }
+    } catch (e) { console.error('[v0] Failed to fetch confessions:', e) }
+  }, [])
 
-  const fetchIncidents = async () => {
-    if (!userLocation) return
+  const fetchIncidents = useCallback(async (center?: [number, number]) => {
+    const loc = center || selectedLocationRef.current || userLocationRef.current
+    if (!loc) return
     try {
-      const res = await fetch(`/api/truth?lat=${userLocation[0]}&lng=${userLocation[1]}`)
+      const res = await fetch(`/api/truth?lat=${loc[0]}&lng=${loc[1]}`)
       const data = await res.json()
       setTruthIncidents(data.list || [])
-    } catch (error) {
-      console.error('[v0] Failed to fetch truth incidents:', error)
-    }
-  }
+    } catch (e) { console.error('[v0] Failed to fetch truth incidents:', e) }
+  }, [])
 
-  const fetchMoods = async () => {
-    if (!userLocation) return
+  const fetchMoods = useCallback(async (center?: [number, number]) => {
+    const loc = center || selectedLocationRef.current || userLocationRef.current
+    if (!loc) return
     try {
-      const res = await fetch(`/api/feel?lat=${userLocation[0]}&lng=${userLocation[1]}`)
+      const res = await fetch(`/api/feel?lat=${loc[0]}&lng=${loc[1]}`)
       const data = await res.json()
       setFeelMoods(data.list || [])
-    } catch (error) {
-      console.error('[v0] Failed to fetch moods:', error)
-    }
-  }
+    } catch (e) { console.error('[v0] Failed to fetch moods:', e) }
+  }, [])
 
-  const handleRefreshMapData = () => {
-    fetchNowPosts()
-    fetchMemories()
-    fetchConfessions()
-    fetchIncidents()
-    fetchMoods()
-  }
+  // Full refresh — called by panels after writes, and on location/selection change
+  const handleRefreshMapData = useCallback((center?: [number, number]) => {
+    fetchNowPosts(center)
+    fetchMemories(center)
+    fetchConfessions(center)
+    fetchIncidents(center)
+    fetchMoods(center)
+  }, [fetchNowPosts, fetchMemories, fetchConfessions, fetchIncidents, fetchMoods])
 
-  // Fetch now posts when user location changes
+  // --- AUTO-FETCH on userLocation resolve ---
   useEffect(() => {
     if (!userLocation) return
-    fetchNowPosts()
-    const interval = setInterval(fetchNowPosts, 30000)
+    handleRefreshMapData(userLocation)
+    const interval = setInterval(() => fetchNowPosts(userLocation), 30000)
     return () => clearInterval(interval)
-  }, [userLocation])
+  }, [userLocation]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch memories, confessions, and incidents when user location changes
+  // --- RE-FETCH when user clicks a new location on the map ---
   useEffect(() => {
-    if (!userLocation) return
-    fetchMemories()
-    fetchConfessions()
-    fetchIncidents()
-    fetchMoods()
-  }, [userLocation])
+    if (!selectedLocation) return
+    handleRefreshMapData(selectedLocation)
+  }, [selectedLocation]) // eslint-disable-line react-hooks/exhaustive-deps
 
-
-
-  // Trigger check-in when user location is resolved
+  // --- CHECK-IN for rhythm ---
   useEffect(() => {
     if (!userLocation || !userId) return
-    const doCheckin = async () => {
-      try {
-        await fetch('/api/rhythm', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            lat: userLocation[0],
-            lng: userLocation[1],
-            user_id: userId
-          })
-        })
-      } catch (error) {
-        console.error('[v0] Failed to log check-in:', error)
-      }
-    }
-    doCheckin()
+    fetch('/api/rhythm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lat: userLocation[0], lng: userLocation[1], user_id: userId }),
+    }).catch((e) => console.error('[v0] Failed to log check-in:', e))
   }, [userLocation, userId])
 
+  // --- OPEN SHEET on layer change ---
+  useEffect(() => { setIsSheetOpen(true) }, [activeLayer])
 
-  // Open sheet when layer changes
-  useEffect(() => {
-    setIsSheetOpen(true)
-  }, [activeLayer])
-
+  // --- HANDLERS ---
   const handleMapClick = (lat: number, lng: number) => {
-    if (activeLayer === 'now') return // Now layer is locked to user location
+    if (activeLayer === 'now') return
     setSelectedLocation([lat, lng])
     setIsSheetOpen(true)
   }
 
   const handleLayerChange = (layer: LayerType) => {
     setActiveLayer(layer)
-    // When switching to Now, clear selected location
-    if (layer === 'now') {
-      setSelectedLocation(null)
-    }
+    if (layer === 'now') setSelectedLocation(null)
   }
 
   const handleRequestLocation = () => {
@@ -213,30 +188,25 @@ export default function HomePage() {
           setHasLocationPermission(true)
           setIsGeolocating(false)
         },
-        () => {
-          setIsGeolocating(false)
-        }
+        () => setIsGeolocating(false)
       )
     }
   }
 
   const handleExploreWithoutLocation = () => {
-    // Set to New York as default
     setUserLocation([40.7128, -74.006])
     setGpsAccuracy(1000)
     setHasLocationPermission(true)
     setIsGeolocating(false)
   }
 
-  const handleSearchLocationSelect = (lat: number, lng: number, name: string) => {
+  const handleSearchLocationSelect = (lat: number, lng: number, _name: string) => {
     setSelectedLocation([lat, lng])
     setIsSheetOpen(true)
     setSearchDropdownOpen(false)
   }
 
-  const handleMapClickClose = () => {
-    setSearchDropdownOpen(false)
-  }
+  const handleMapClickClose = () => setSearchDropdownOpen(false)
 
   return (
     <div className={`relative w-full h-screen overflow-hidden transition-colors duration-300 ${getBgClass(theme, 'primary')}`}>
@@ -252,7 +222,7 @@ export default function HomePage() {
       <LeftNavigation activeLayer={activeLayer} onLayerChange={handleLayerChange} />
 
       {/* Search Bar */}
-      <SearchBar 
+      <SearchBar
         onLocationSelect={handleSearchLocationSelect}
         onDropdownOpen={setSearchDropdownOpen}
       />
@@ -270,10 +240,7 @@ export default function HomePage() {
         onMapClick={handleMapClick}
       />
 
-
-
-
-      {/* Layer Selector - will be hidden, kept for compatibility */}
+      {/* Layer Selector — kept for compatibility */}
       <LayerSelector activeLayer={activeLayer} onLayerChange={setActiveLayer} />
 
       {/* Bottom Sheet */}
@@ -293,28 +260,47 @@ export default function HomePage() {
         }
       >
         {activeLayer === 'now' && (
-          <NowPanel userLocation={userLocation} selectedLocation={selectedLocation} userId={userId} gpsAccuracy={gpsAccuracy || undefined} onRefreshMapData={handleRefreshMapData} />
+          <NowPanel
+            userLocation={userLocation}
+            selectedLocation={selectedLocation}
+            userId={userId}
+            gpsAccuracy={gpsAccuracy || undefined}
+            onRefreshMapData={() => handleRefreshMapData()}
+          />
         )}
         {activeLayer === 'feel' && (
-          <FeelPanel userLocation={userLocation} selectedLocation={selectedLocation} userId={userId} onRefreshMapData={handleRefreshMapData} />
+          <FeelPanel
+            userLocation={userLocation}
+            selectedLocation={selectedLocation}
+            userId={userId}
+            onRefreshMapData={() => handleRefreshMapData()}
+          />
         )}
         {activeLayer === 'truth' && (
-          <TruthPanel userLocation={userLocation} selectedLocation={selectedLocation} userId={userId} onRefreshMapData={handleRefreshMapData} />
+          <TruthPanel
+            userLocation={userLocation}
+            selectedLocation={selectedLocation}
+            userId={userId}
+            onRefreshMapData={() => handleRefreshMapData()}
+          />
         )}
         {activeLayer === 'memory' && (
-          <MemoryPanel userLocation={userLocation} selectedLocation={selectedLocation} userId={userId} onRefreshMapData={handleRefreshMapData} />
+          <MemoryPanel
+            userLocation={userLocation}
+            selectedLocation={selectedLocation}
+            userId={userId}
+            onRefreshMapData={() => handleRefreshMapData()}
+          />
         )}
-
         {activeLayer === 'rhythm' && (
           <RhythmPanel userLocation={userLocation} selectedLocation={selectedLocation} />
         )}
       </BottomSheet>
 
-      {/* Onboarding Modal Overlay */}
+      {/* Onboarding Modal */}
       {showOnboarding && (
         <OnboardingModal onClose={() => setShowOnboarding(false)} />
       )}
     </div>
-
   )
 }

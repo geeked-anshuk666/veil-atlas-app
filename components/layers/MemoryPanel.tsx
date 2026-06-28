@@ -51,7 +51,7 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, on
   }, [selectedLocation, userLocation])
 
   const handleSubmitMemory = async () => {
-    if (!memoryText.trim() || !userLocation) return
+    if (!memoryText.trim() || !targetLocation) return
 
     setSubmitting(true)
     try {
@@ -59,8 +59,8 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, on
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          lat: userLocation[0],
-          lng: userLocation[1],
+          lat: targetLocation[0],
+          lng: targetLocation[1],
           content: memoryText,
           year_label: memoryYear || 'unknown',
           user_id: userId,
@@ -71,7 +71,7 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, on
       setShowNewMemory(false)
       // Refetch
       const res = await fetch(
-        `/api/memory?lat=${targetLocation![0]}&lng=${targetLocation![1]}`
+        `/api/memory?lat=${targetLocation[0]}&lng=${targetLocation[1]}`
       )
       const data = await res.json()
       setMemories(data)
@@ -83,8 +83,9 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, on
     }
   }
 
+
   const handleSubmitEcho = async () => {
-    if (!echoText.trim() || !userLocation) return
+    if (!echoText.trim() || !targetLocation) return
 
     setSubmitting(true)
     try {
@@ -92,8 +93,8 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, on
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          lat: userLocation[0],
-          lng: userLocation[1],
+          lat: targetLocation[0],
+          lng: targetLocation[1],
           content: echoText,
           for_whom: echoFor || undefined,
         }),
@@ -103,7 +104,7 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, on
       setShowNewEcho(false)
       // Refetch
       const res = await fetch(
-        `/api/echo?lat=${targetLocation![0]}&lng=${targetLocation![1]}`
+        `/api/echo?lat=${targetLocation[0]}&lng=${targetLocation[1]}`
       )
       const data = await res.json()
       setEchoData(data)
@@ -113,6 +114,7 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, on
     } finally {
       setSubmitting(false)
     }
+
   }
 
 

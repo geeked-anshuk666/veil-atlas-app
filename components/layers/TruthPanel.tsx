@@ -68,15 +68,15 @@ export default function TruthPanel({ userLocation, selectedLocation, userId, onR
     type: string,
     timeOfDay: string
   ) => {
-    if (!userLocation) return
+    if (!targetLocation) return
 
     try {
       await fetch('/api/truth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          lat: userLocation[0],
-          lng: userLocation[1],
+          lat: targetLocation[0],
+          lng: targetLocation[1],
           incident_type: type,
           time_of_day: timeOfDay,
           user_id: userId,
@@ -85,7 +85,7 @@ export default function TruthPanel({ userLocation, selectedLocation, userId, onR
       setShowModal(false)
       // Refetch
       const response = await fetch(
-        `/api/truth?lat=${targetLocation![0]}&lng=${targetLocation![1]}`
+        `/api/truth?lat=${targetLocation[0]}&lng=${targetLocation[1]}`
       )
       const truthData = await response.json()
       setData(truthData)

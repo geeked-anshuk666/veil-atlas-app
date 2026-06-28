@@ -49,15 +49,37 @@ export default function RhythmPanel({ userLocation, selectedLocation }: RhythmPa
     fetchData()
   }, [selectedLocation, userLocation])
 
+  const getProcessedData = () => {
+    if (!data) return null
+    const hourly = Array.from({ length: 24 }, (_, i) => {
+      const found = data.hourly.find((h: any) => Number(h.hour_of_day) === i)
+      return {
+        hour: i,
+        count: found ? parseInt(found.count as any) : 0,
+      }
+    })
+    const weekly = Array.from({ length: 7 }, (_, i) => {
+      const found = data.weekly.find((w: any) => Number(w.day_of_week) === i)
+      return {
+        day: i,
+        morning: found ? parseInt(found.morning as any) : 0,
+        afternoon: found ? parseInt(found.afternoon) : 0,
+        evening: found ? parseInt(found.evening) : 0,
+      }
+    })
+    return { hourly, weekly }
+  }
+
+  const processed = getProcessedData()
 
   // Find busiest time of week
   const getMostAliveTime = () => {
-    if (!data) return 'unknown'
+    if (!processed) return 'unknown'
     let maxCount = 0
     let maxDay = 0
     let maxPeriod = 'morning'
 
-    data.weekly.forEach((week) => {
+    processed.weekly.forEach((week) => {
       if (week.morning > maxCount) {
         maxCount = week.morning
         maxDay = week.day
@@ -92,7 +114,7 @@ export default function RhythmPanel({ userLocation, selectedLocation }: RhythmPa
       <h2 className="text-xs font-medium text-gray-400">when this place breathes</h2>
 
       {/* Radial chart */}
-      {data && <RadialChart hourlyData={data.hourly} />}
+      {processed && <RadialChart hourlyData={processed.hourly} />}
 
       {/* Insight */}
       <div className="text-center text-sm text-green-400">
@@ -110,7 +132,8 @@ export default function RhythmPanel({ userLocation, selectedLocation }: RhythmPa
       </div>
 
       {/* Heatmap */}
-      {data && <HeatmapGrid weeklyData={data.weekly} />}
+      {processed && <HeatmapGrid weeklyData={processed.weekly} />}
     </div>
   )
 }
+

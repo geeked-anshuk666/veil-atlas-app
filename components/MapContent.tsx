@@ -1,6 +1,6 @@
 'use client'
 
-import { MapContainer, TileLayer, CircleMarker, Popup, useMapEvent, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, CircleMarker, Popup, useMapEvent, useMap, Tooltip } from 'react-leaflet'
 import { LatLng } from 'leaflet'
 import { useTheme } from '@/lib/theme-context'
 import 'leaflet/dist/leaflet.css'
@@ -13,10 +13,9 @@ interface MapContentProps {
   memories: Array<{ id: string; lat: number; lng: number; year_label: string }>
   feelConfessions: Array<{ id: string; lat: number; lng: number; content: string }>
   truthIncidents: Array<{ id: string; lat: number; lng: number; type: string; time_of_day: string }>
+  feelMoods: Array<{ id: string; lat: number; lng: number; emotion: string }>
   onMapClick?: (lat: number, lng: number) => void
 }
-
-
 
 const CARTODB_DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
 const CARTODB_LIGHT_TILES = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
@@ -48,6 +47,27 @@ function FlyToLocation({ selectedLocation }: { selectedLocation: [number, number
   return null
 }
 
+const getEmotionEmoji = (emotion: string) => {
+  switch (emotion) {
+    case 'peaceful': return '🌊'
+    case 'joyful': return '☀️'
+    case 'anxious': return '⚡'
+    case 'melancholy': return '🌧️'
+    case 'alive': return '🔥'
+    default: return '🌡'
+  }
+}
+
+const getEmotionColor = (emotion: string) => {
+  switch (emotion) {
+    case 'peaceful': return '#3b82f6' // blue
+    case 'joyful': return '#f59e0b' // amber
+    case 'anxious': return '#ef4444' // red
+    case 'melancholy': return '#a855f7' // purple
+    case 'alive': return '#10b981' // emerald green
+    default: return '#fbbf24'
+  }
+}
 
 export default function MapContent({
   activeLayer,
@@ -57,10 +77,9 @@ export default function MapContent({
   memories,
   feelConfessions,
   truthIncidents,
+  feelMoods,
   onMapClick,
 }: MapContentProps) {
-
-
   const { theme } = useTheme()
   const [lat, lng] = userLocation
 
@@ -98,22 +117,27 @@ export default function MapContent({
               weight={2}
               className="pulse-marker"
             >
+              <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
+                <span>⚡ Live Signal: &ldquo;{post.content.slice(0, 30)}...&rdquo;</span>
+              </Tooltip>
               <Popup>{post.content}</Popup>
             </CircleMarker>
           ))}
 
-        {/* Feel layer - amber semi-transparent circle around user */}
+        {/* Feel layer - amber semi-transparent circle around user + confessions + moods */}
         {activeLayer === 'feel' && (
           <CircleMarker
             center={new LatLng(lat, lng)}
             radius={60}
-            fillOpacity={0.15}
+            fillOpacity={0.12}
             color="#fbbf24"
             fillColor="#fbbf24"
             weight={1}
             dashArray="5,5"
           />
         )}
+
+        {/* Confession markers */}
         {activeLayer === 'feel' &&
           feelConfessions &&
           feelConfessions.map((c) => (
@@ -132,10 +156,38 @@ export default function MapContent({
                 },
               }}
             >
+              <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
+                <span>🌡 Confession: &ldquo;{c.content.slice(0, 30)}...&rdquo;</span>
+              </Tooltip>
               <Popup>&ldquo;{c.content}&rdquo;</Popup>
             </CircleMarker>
           ))}
 
+        {/* Mood markers */}
+        {activeLayer === 'feel' &&
+          feelMoods &&
+          feelMoods.map((m) => (
+            <CircleMarker
+              key={m.id}
+              center={new LatLng(m.lat, m.lng)}
+              radius={9}
+              fillOpacity={0.85}
+              color="white"
+              fillColor={getEmotionColor(m.emotion)}
+              weight={2}
+              className="pulse-marker"
+              eventHandlers={{
+                click: () => {
+                  onMapClick?.(m.lat, m.lng)
+                },
+              }}
+            >
+              <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
+                <span>{getEmotionEmoji(m.emotion)} Feeling: {m.emotion}</span>
+              </Tooltip>
+              <Popup>Logged mood: {m.emotion} {getEmotionEmoji(m.emotion)}</Popup>
+            </CircleMarker>
+          ))}
 
         {/* Truth layer - red incident markers */}
         {activeLayer === 'truth' &&
@@ -156,10 +208,12 @@ export default function MapContent({
                 },
               }}
             >
+              <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
+                <span>👁 Documented Incident: {incident.type}</span>
+              </Tooltip>
               <Popup>{incident.type} ({incident.time_of_day})</Popup>
             </CircleMarker>
           ))}
-
 
         {/* Memory layer - purple markers at memory coordinates */}
         {activeLayer === 'memory' &&
@@ -167,12 +221,20 @@ export default function MapContent({
             <CircleMarker
               key={memory.id}
               center={new LatLng(memory.lat, memory.lng)}
-              radius={6}
+              radius={7}
               fillOpacity={0.8}
               color="#a855f7"
               fillColor="#a855f7"
               weight={2}
+              eventHandlers={{
+                click: () => {
+                  onMapClick?.(memory.lat, memory.lng)
+                },
+              }}
             >
+              <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
+                <span>🕰 Memory logged for: {memory.year_label}</span>
+              </Tooltip>
               <Popup>{memory.year_label}</Popup>
             </CircleMarker>
           ))}
@@ -193,7 +255,7 @@ export default function MapContent({
         {selectedLocation && activeLayer !== 'now' && (
           <CircleMarker
             center={new LatLng(selectedLocation[0], selectedLocation[1])}
-            radius={10}
+            radius={11}
             fillOpacity={0.9}
             color="white"
             fillColor={activeLayer === 'feel' ? '#f59e0b' : activeLayer === 'truth' ? '#ef4444' : activeLayer === 'memory' ? '#a855f7' : '#22c55e'}
@@ -212,7 +274,6 @@ export default function MapContent({
           className="user-marker"
         />
       </MapContainer>
-
 
       {/* CSS animation for pulsing dots */}
       <style>{`

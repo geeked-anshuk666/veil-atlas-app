@@ -33,7 +33,9 @@ export default function HomePage() {
   const [memories, setMemories] = useState<Memory[]>([])
   const [feelConfessions, setFeelConfessions] = useState<any[]>([])
   const [truthIncidents, setTruthIncidents] = useState<any[]>([])
+  const [feelMoods, setFeelMoods] = useState<any[]>([])
   const [showOnboarding, setShowOnboarding] = useState(false)
+
 
 
   // Initialize user ID and geolocation
@@ -130,10 +132,22 @@ export default function HomePage() {
       }
     }
 
+    const fetchMoods = async () => {
+      try {
+        const res = await fetch(`/api/feel?lat=${userLocation[0]}&lng=${userLocation[1]}`)
+        const data = await res.json()
+        setFeelMoods(data.list || [])
+      } catch (error) {
+        console.error('[v0] Failed to fetch moods:', error)
+      }
+    }
+
     fetchMemories()
     fetchConfessions()
     fetchIncidents()
+    fetchMoods()
   }, [userLocation])
+
 
   // Trigger check-in when user location is resolved
   useEffect(() => {
@@ -240,8 +254,10 @@ export default function HomePage() {
         memories={memories}
         feelConfessions={feelConfessions}
         truthIncidents={truthIncidents}
+        feelMoods={feelMoods}
         onMapClick={handleMapClick}
       />
+
 
 
 

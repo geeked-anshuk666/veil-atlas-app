@@ -9,9 +9,10 @@ export async function GET(request: NextRequest) {
   const pins = await sql`
     SELECT id, content, lat, lng, created_at
     FROM static_pins
-    WHERE haversine(${lat}, ${lng}, lat, lng) <= 1000
     ORDER BY created_at DESC
+    LIMIT 50
   `
+
   return NextResponse.json({
     pins: pins.map((p) => ({
       id: p.id,

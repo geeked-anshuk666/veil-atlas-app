@@ -10,10 +10,10 @@ export async function GET(request: NextRequest) {
     SELECT id, content, year_label, created_at,
       ROUND(haversine(${lat}, ${lng}, lat, lng)::numeric) AS distance_m
     FROM memories
-    WHERE haversine(${lat}, ${lng}, lat, lng) < 500
-    ORDER BY distance_m ASC
-    LIMIT 15
+    ORDER BY created_at DESC
+    LIMIT 50
   `
+
   return NextResponse.json(memories)
 }
 

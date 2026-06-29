@@ -9,8 +9,7 @@ export async function GET(request: NextRequest) {
   const rows = await sql`
     SELECT incident_type as type, COUNT(*) as count
     FROM incidents
-    WHERE haversine(${lat}, ${lng}, lat, lng) < 800
-      AND created_at > NOW() - INTERVAL '1 year'
+    WHERE created_at > NOW() - INTERVAL '1 year'
     GROUP BY incident_type
     ORDER BY count DESC
   `
@@ -19,11 +18,11 @@ export async function GET(request: NextRequest) {
     SELECT id, incident_type as type, time_of_day, lat, lng, created_at,
       haversine(${lat}, ${lng}, lat, lng) as distance
     FROM incidents
-    WHERE haversine(${lat}, ${lng}, lat, lng) < 800
-      AND created_at > NOW() - INTERVAL '1 year'
+    WHERE created_at > NOW() - INTERVAL '1 year'
     ORDER BY created_at DESC
-    LIMIT 15
+    LIMIT 50
   `
+
 
   return NextResponse.json({
     total: rows.reduce((sum, r) => sum + Number(r.count), 0),

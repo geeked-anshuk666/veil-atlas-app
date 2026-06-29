@@ -38,7 +38,8 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, on
         ])
         const memData = await memRes.json()
         const echData = await echoRes.json()
-        setMemories(memData)
+        setMemories(Array.isArray(memData) ? memData : [])
+
         setEchoData(echData)
       } catch (error) {
         console.error('[v0] Error fetching memory data:', error)
@@ -74,7 +75,8 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, on
         `/api/memory?lat=${targetLocation[0]}&lng=${targetLocation[1]}`
       )
       const data = await res.json()
-      setMemories(data)
+      setMemories(Array.isArray(data) ? data : [])
+
       onRefreshMapData?.()
     } catch (error) {
       console.error('[v0] Error submitting memory:', error)

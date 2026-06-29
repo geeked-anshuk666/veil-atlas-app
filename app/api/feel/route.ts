@@ -11,8 +11,7 @@ export async function GET(request: NextRequest) {
   const rows = await sql`
     SELECT emotion, COUNT(*) as count
     FROM emotional_records
-    WHERE haversine(${lat}, ${lng}, lat, lng) < 1000
-      AND created_at > NOW() - INTERVAL '7 days'
+    WHERE created_at > NOW() - INTERVAL '7 days'
     GROUP BY emotion
     ORDER BY count DESC
     LIMIT 1
@@ -21,11 +20,11 @@ export async function GET(request: NextRequest) {
   const list = await sql`
     SELECT id, emotion, lat, lng, created_at
     FROM emotional_records
-    WHERE haversine(${lat}, ${lng}, lat, lng) < 1000
-      AND created_at > NOW() - INTERVAL '7 days'
+    WHERE created_at > NOW() - INTERVAL '7 days'
     ORDER BY created_at DESC
-    LIMIT 30
+    LIMIT 50
   `
+
 
   return NextResponse.json({
     dominant_emotion: rows[0]?.emotion || null,

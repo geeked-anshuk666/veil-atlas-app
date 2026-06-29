@@ -72,10 +72,9 @@ export default function LeftNavigation({ activeLayer, onLayerChange }: LeftNavig
               key={layer.id}
               onClick={() => handleLayerClick(layer.id)}
               title={layer.description}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300 ${
-
+              className={`w-full flex items-center justify-center gap-3 px-2 py-3 rounded-xl transition-all duration-300 ${
                 activeLayer === layer.id
-                  ? 'scale-110 md:scale-100'
+                  ? 'scale-105'
                   : 'scale-100 hover:scale-105'
               } ${
                 activeLayer === layer.id
@@ -103,7 +102,9 @@ export default function LeftNavigation({ activeLayer, onLayerChange }: LeftNavig
                     : 'none',
               }}
             >
-              <span className="text-2xl flex-shrink-0">{layer.icon}</span>
+              <span className="w-6 h-6 flex items-center justify-center text-lg leading-none flex-shrink-0">
+                {layer.icon}
+              </span>
               {isExpanded && (
                 <span className="text-xs font-semibold uppercase tracking-widest truncate">
                   {layer.label}

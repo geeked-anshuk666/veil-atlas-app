@@ -3,6 +3,7 @@
 import { MapContainer, TileLayer, CircleMarker, Popup, useMapEvent, useMap, Tooltip, Marker } from 'react-leaflet'
 import { LatLng, divIcon } from 'leaflet'
 import { useTheme } from '@/lib/theme-context'
+import { useState } from 'react'
 import 'leaflet/dist/leaflet.css'
 
 
@@ -148,6 +149,13 @@ function MapClickHandler({ onMapClick }: { onMapClick?: (lat: number, lng: numbe
 }
 
 
+// ZoomListener: tracks map zoom level reactively
+function ZoomListener({ onZoom }: { onZoom: (z: number) => void }) {
+  const map = useMap()
+  useMapEvent('zoomend', () => onZoom(map.getZoom()))
+  return null
+}
+
 // Helper component to handle flyTo for selected locations
 function FlyToLocation({ selectedLocation }: { selectedLocation: [number, number] | null }) {
   const map = useMap()
@@ -200,6 +208,10 @@ export default function MapContent({
 }: MapContentProps) {
   const { theme } = useTheme()
   const [lat, lng] = userLocation
+  const [zoom, setZoom] = useState(16)
+
+  // Dynamic ground radius: 35m at zoom 16, doubles for each level zoomed out
+  const dynamicRadius = Math.max(35, 35 * Math.pow(2, Math.max(0, 16 - zoom)))
 
   return (
     <div className="absolute inset-0 z-0">
@@ -218,13 +230,15 @@ export default function MapContent({
 
         {/* Map click handler */}
         <MapClickHandler onMapClick={onMapClick} activeLayer={activeLayer} />
+        {/* Zoom tracker for dynamic cluster radius */}
+        <ZoomListener onZoom={setZoom} />
 
         {/* FlyTo for selected locations */}
         <FlyToLocation selectedLocation={selectedLocation} />
 
         {/* Now layer - blue pulsing dots or 3D towers */}
         {activeLayer === 'now' &&
-          clusterPins(nowPosts, 35).map((cluster, cIdx) => {
+          clusterPins(nowPosts, dynamicRadius).map((cluster, cIdx) => {
 
             const count = cluster.pins.length
             if (count > 1) {
@@ -304,7 +318,7 @@ export default function MapContent({
             ...(feelMoods || []).map(m => ({ ...m, type: 'mood' as const }))
           ];
           
-          return clusterPins(unifiedPins, 35).map((cluster, cIdx) => {
+          return clusterPins(unifiedPins, dynamicRadius).map((cluster, cIdx) => {
 
             const count = cluster.pins.length;
             if (count > 1) {
@@ -401,7 +415,7 @@ export default function MapContent({
         {/* Truth layer - red incident markers */}
         {activeLayer === 'truth' &&
           truthIncidents &&
-          clusterPins(truthIncidents, 35).map((cluster, cIdx) => {
+          clusterPins(truthIncidents, dynamicRadius).map((cluster, cIdx) => {
 
             const count = cluster.pins.length
             if (count > 1) {
@@ -463,7 +477,7 @@ export default function MapContent({
 
         {/* Memory layer - purple markers at memory coordinates */}
         {activeLayer === 'memory' &&
-          clusterPins(memories, 35).map((cluster, cIdx) => {
+          clusterPins(memories, dynamicRadius).map((cluster, cIdx) => {
 
             const count = cluster.pins.length
             if (count > 1) {

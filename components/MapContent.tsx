@@ -12,7 +12,7 @@ interface MapContentProps {
   userLocation: [number, number]
   selectedLocation: [number, number] | null
   nowPosts: Array<{ id: string; lat: number; lng: number; content: string }>
-  memories: Array<{ id: string; lat: number; lng: number; year_label: string }>
+  memories: Array<{ id: string; lat: number; lng: number; year_label: string; content: string }>
   feelConfessions: Array<{ id: string; lat: number; lng: number; content: string }>
   truthIncidents: Array<{ id: string; lat: number; lng: number; type: string; time_of_day: string }>
   feelMoods: Array<{ id: string; lat: number; lng: number; emotion: string }>

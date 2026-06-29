@@ -12,7 +12,8 @@ interface MapProps {
   feelConfessions: Array<{ id: string; lat: number; lng: number; content: string }>
   truthIncidents: Array<{ id: string; lat: number; lng: number; type: string; time_of_day: string }>
   feelMoods: Array<{ id: string; lat: number; lng: number; emotion: string }>
-  onMapClick?: (lat: number, lng: number) => void
+  onMapClick?: (lat: number, lng: number, pinId?: string) => void
+
 }
 
 const MapContent = lazy(() => import('./MapContent'))

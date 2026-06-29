@@ -24,6 +24,7 @@ export default function HomePage() {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null)
   const [selectedLocation, setSelectedLocation] = useState<[number, number] | null>(null)
+  const [selectedPinId, setSelectedPinId] = useState<string | null>(null)
   const [userId, setUserId] = useState<string>('')
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [hasLocationPermission, setHasLocationPermission] = useState(false)
@@ -166,16 +167,19 @@ export default function HomePage() {
   useEffect(() => { setIsSheetOpen(true) }, [activeLayer])
 
   // --- HANDLERS ---
-  const handleMapClick = (lat: number, lng: number) => {
+  const handleMapClick = (lat: number, lng: number, pinId?: string) => {
     if (activeLayer === 'now') return
     setSelectedLocation([lat, lng])
     setIsSheetOpen(true)
+    setSelectedPinId(pinId || null)
   }
 
   const handleLayerChange = (layer: LayerType) => {
     setActiveLayer(layer)
+    setSelectedPinId(null)
     if (layer === 'now') setSelectedLocation(null)
   }
+
 
   const handleRequestLocation = () => {
     setIsGeolocating(true)
@@ -273,6 +277,7 @@ export default function HomePage() {
             userLocation={userLocation}
             selectedLocation={selectedLocation}
             userId={userId}
+            selectedPinId={selectedPinId}
             onRefreshMapData={() => handleRefreshMapData()}
           />
         )}
@@ -281,6 +286,7 @@ export default function HomePage() {
             userLocation={userLocation}
             selectedLocation={selectedLocation}
             userId={userId}
+            selectedPinId={selectedPinId}
             onRefreshMapData={() => handleRefreshMapData()}
           />
         )}
@@ -289,6 +295,7 @@ export default function HomePage() {
             userLocation={userLocation}
             selectedLocation={selectedLocation}
             userId={userId}
+            selectedPinId={selectedPinId}
             onRefreshMapData={() => handleRefreshMapData()}
           />
         )}
@@ -296,6 +303,7 @@ export default function HomePage() {
           <RhythmPanel userLocation={userLocation} selectedLocation={selectedLocation} />
         )}
       </BottomSheet>
+
 
       {/* Onboarding Modal */}
       {showOnboarding && (

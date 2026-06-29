@@ -7,7 +7,9 @@ interface FeelPanelProps {
   userLocation: [number, number] | null
   selectedLocation: [number, number] | null
   userId: string
+  selectedPinId?: string | null
   onRefreshMapData?: () => void
+
 }
 
 const emotions = [
@@ -29,7 +31,8 @@ interface ConfessionData {
   created_at: string
 }
 
-export default function FeelPanel({ userLocation, selectedLocation, userId, onRefreshMapData }: FeelPanelProps) {
+export default function FeelPanel({ userLocation, selectedLocation, userId, selectedPinId, onRefreshMapData }: FeelPanelProps) {
+
   const { theme } = useTheme()
   const [feel, setFeel] = useState<FeelData | null>(null)
   const [confessions, setConfessions] = useState<ConfessionData[]>([])
@@ -41,8 +44,19 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, onRe
 
   const targetLocation = selectedLocation || userLocation
 
+  // Auto-scroll when selected from map
+  useEffect(() => {
+    if (selectedPinId) {
+      const element = document.getElementById(`card-${selectedPinId}`)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }
+    }
+  }, [selectedPinId])
+
   useEffect(() => {
     if (!targetLocation) return
+
 
     const fetchData = async () => {
       try {
@@ -197,25 +211,35 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, onRe
         </h3>
         {confessions.length > 0 ? (
           <div className="space-y-3">
-            {confessions.map((c) => (
-              <div 
-                key={c.id} 
-                className={`rounded-2xl p-4 border border-l-2 italic text-sm leading-relaxed transition-all ${
-                  theme === 'dark'
-                    ? 'bg-zinc-950/40 border-zinc-900 border-l-amber-500 text-zinc-200'
-                    : 'bg-white border-zinc-200 border-l-amber-500 text-zinc-700'
-                }`}
-                style={{
-                  backdropFilter: 'blur(8px)',
-                  WebkitBackdropFilter: 'blur(8px)'
-                }}
-              >
-                &ldquo;{c.content}&rdquo;
-                <div className="text-[10px] text-zinc-500 font-semibold tracking-wider uppercase not-italic mt-3 text-right">
-                  left here {getRelativeTime(c.created_at)}
+            {confessions.map((c) => {
+              const isSelected = c.id === selectedPinId
+              return (
+                <div 
+                  key={c.id} 
+                  id={`card-${c.id}`}
+                  className={`rounded-2xl p-4 border border-l-2 italic text-sm leading-relaxed transition-all duration-300 ${
+                    isSelected
+                      ? theme === 'dark'
+                        ? 'bg-amber-500/10 border-amber-500 text-zinc-100 scale-[1.02]'
+                        : 'bg-amber-50/50 border-amber-500 text-zinc-800 scale-[1.02]'
+                      : theme === 'dark'
+                        ? 'bg-zinc-950/40 border-zinc-900 border-l-amber-500 text-zinc-200'
+                        : 'bg-white border-zinc-200 border-l-amber-500 text-zinc-700'
+                  }`}
+                  style={{
+                    backdropFilter: 'blur(8px)',
+                    WebkitBackdropFilter: 'blur(8px)',
+                    boxShadow: isSelected ? '0 0 15px rgba(245, 158, 11, 0.4)' : undefined
+                  }}
+                >
+                  &ldquo;{c.content}&rdquo;
+                  <div className="text-[10px] text-zinc-500 font-semibold tracking-wider uppercase not-italic mt-3 text-right">
+                    left here {getRelativeTime(c.created_at)}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
+
           </div>
         ) : (
           <div className={`text-center py-6 text-sm border border-dashed rounded-xl ${

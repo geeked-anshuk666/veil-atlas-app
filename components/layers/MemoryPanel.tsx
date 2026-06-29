@@ -8,10 +8,13 @@ interface MemoryPanelProps {
   userLocation: [number, number] | null
   selectedLocation: [number, number] | null
   userId: string
+  selectedPinId?: string | null
   onRefreshMapData?: () => void
+
 }
 
-export default function MemoryPanel({ userLocation, selectedLocation, userId, onRefreshMapData }: MemoryPanelProps) {
+export default function MemoryPanel({ userLocation, selectedLocation, userId, selectedPinId, onRefreshMapData }: MemoryPanelProps) {
+
   const { theme } = useTheme()
   const [memories, setMemories] = useState<Memory[]>([])
   const [echoData, setEchoData] = useState<Echo | null>(null)
@@ -26,8 +29,19 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, on
 
   const targetLocation = selectedLocation || userLocation
 
+  // Auto-scroll when selected from map
+  useEffect(() => {
+    if (selectedPinId) {
+      const element = document.getElementById(`card-${selectedPinId}`)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }
+    }
+  }, [selectedPinId])
+
   useEffect(() => {
     if (!targetLocation) return
+
 
     const fetchData = async () => {
       try {
@@ -218,27 +232,37 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, on
         </h3>
         {memories.length > 0 ? (
           <div className="space-y-3">
-            {memories.map((mem) => (
-              <div 
-                key={mem.id} 
-                className={`rounded-2xl p-4 border border-l-2 transition-all ${
-                  theme === 'dark'
-                    ? 'bg-zinc-950/40 border-zinc-900 border-l-purple-500 text-zinc-200'
-                    : 'bg-white border-zinc-200 border-l-purple-500 text-zinc-700'
-                }`}
-                style={{
-                  backdropFilter: 'blur(8px)',
-                  WebkitBackdropFilter: 'blur(8px)'
-                }}
-              >
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-[10px] font-extrabold tracking-wider bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded-full uppercase">
-                    Year: {mem.year_label}
-                  </span>
+            {memories.map((mem) => {
+              const isSelected = mem.id === selectedPinId
+              return (
+                <div 
+                  key={mem.id} 
+                  id={`card-${mem.id}`}
+                  className={`rounded-2xl p-4 border border-l-2 transition-all duration-300 ${
+                    isSelected
+                      ? theme === 'dark'
+                        ? 'bg-purple-500/10 border-purple-500 text-zinc-100 scale-[1.02]'
+                        : 'bg-purple-50/50 border-purple-500 text-zinc-800 scale-[1.02]'
+                      : theme === 'dark'
+                        ? 'bg-zinc-950/40 border-zinc-900 border-l-purple-500 text-zinc-200'
+                        : 'bg-white border-zinc-200 border-l-purple-500 text-zinc-700'
+                  }`}
+                  style={{
+                    backdropFilter: 'blur(8px)',
+                    WebkitBackdropFilter: 'blur(8px)',
+                    boxShadow: isSelected ? '0 0 15px rgba(168, 85, 247, 0.4)' : undefined
+                  }}
+                >
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-[10px] font-extrabold tracking-wider bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded-full uppercase">
+                      Year: {mem.year_label}
+                    </span>
+                  </div>
+                  <p className="text-sm leading-relaxed">{mem.content}</p>
                 </div>
-                <p className="text-sm leading-relaxed">{mem.content}</p>
-              </div>
-            ))}
+              )
+            })}
+
           </div>
         ) : (
           <div className={`text-center py-6 text-sm border border-dashed rounded-xl ${

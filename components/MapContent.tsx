@@ -14,7 +14,8 @@ interface MapContentProps {
   feelConfessions: Array<{ id: string; lat: number; lng: number; content: string }>
   truthIncidents: Array<{ id: string; lat: number; lng: number; type: string; time_of_day: string }>
   feelMoods: Array<{ id: string; lat: number; lng: number; emotion: string }>
-  onMapClick?: (lat: number, lng: number) => void
+  onMapClick?: (lat: number, lng: number, pinId?: string) => void
+
 }
 
 const CARTODB_DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
@@ -152,9 +153,10 @@ export default function MapContent({
               className="pulse-marker"
               eventHandlers={{
                 click: () => {
-                  onMapClick?.(c.lat, c.lng)
+                  onMapClick?.(c.lat, c.lng, c.id)
                 },
               }}
+
             >
               <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
                 <span>🌡 Confession: &ldquo;{c.content.slice(0, 30)}...&rdquo;</span>
@@ -178,9 +180,10 @@ export default function MapContent({
               className="pulse-marker"
               eventHandlers={{
                 click: () => {
-                  onMapClick?.(m.lat, m.lng)
+                  onMapClick?.(m.lat, m.lng, m.id)
                 },
               }}
+
             >
               <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
                 <span>{getEmotionEmoji(m.emotion)} Feeling: {m.emotion}</span>
@@ -204,9 +207,10 @@ export default function MapContent({
               className="pulse-marker"
               eventHandlers={{
                 click: () => {
-                  onMapClick?.(incident.lat, incident.lng)
+                  onMapClick?.(incident.lat, incident.lng, incident.id)
                 },
               }}
+
             >
               <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
                 <span>👁 Documented Incident: {incident.type}</span>
@@ -228,9 +232,10 @@ export default function MapContent({
               weight={2}
               eventHandlers={{
                 click: () => {
-                  onMapClick?.(memory.lat, memory.lng)
+                  onMapClick?.(memory.lat, memory.lng, memory.id)
                 },
               }}
+
             >
               <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
                 <span>🕰 Memory logged for: {memory.year_label}</span>

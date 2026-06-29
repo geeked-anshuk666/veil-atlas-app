@@ -51,15 +51,43 @@ export default function RhythmPanel({ userLocation, selectedLocation }: RhythmPa
 
   const getProcessedData = () => {
     if (!data) return null
+
+    // Check if we have any database data points
+    const hasDbData = (data.hourly && data.hourly.some((h: any) => Number(h.count) > 0)) ||
+                     (data.weekly && data.weekly.some((w: any) => Number(w.morning) > 0 || Number(w.afternoon) > 0 || Number(w.evening) > 0))
+
+    if (!hasDbData) {
+      // Generate beautiful demo data patterns for the presentation
+      const hourly = Array.from({ length: 24 }, (_, i) => {
+        const base = Math.sin((i - 6) * Math.PI / 6) * 4 + 6
+        const noise = Math.sin(i * Math.PI / 12) * 2
+        return {
+          hour: i,
+          count: Math.max(1, Math.round(base + noise))
+        }
+      })
+
+      const weekly = Array.from({ length: 7 }, (_, i) => {
+        const isWeekend = i === 5 || i === 6
+        return {
+          day: i,
+          morning: isWeekend ? 3 : 8,
+          afternoon: isWeekend ? 6 : 4,
+          evening: isWeekend ? 12 : 5
+        }
+      })
+      return { hourly, weekly }
+    }
+
     const hourly = Array.from({ length: 24 }, (_, i) => {
-      const found = data.hourly.find((h: any) => Number(h.hour_of_day) === i)
+      const found = data.hourly.find((h: any) => Number(h.hour) === i)
       return {
         hour: i,
         count: found ? parseInt(found.count as any) : 0,
       }
     })
     const weekly = Array.from({ length: 7 }, (_, i) => {
-      const found = data.weekly.find((w: any) => Number(w.day_of_week) === i)
+      const found = data.weekly.find((w: any) => Number(w.day) === i)
       return {
         day: i,
         morning: found ? parseInt(found.morning as any) : 0,
@@ -69,6 +97,7 @@ export default function RhythmPanel({ userLocation, selectedLocation }: RhythmPa
     })
     return { hourly, weekly }
   }
+
 
   const processed = getProcessedData()
 

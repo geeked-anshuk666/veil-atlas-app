@@ -9,7 +9,6 @@ export async function GET(request: NextRequest) {
   const hourly = await sql`
     SELECT hour_of_day as hour, COUNT(*) as count
     FROM checkins
-    WHERE haversine(${lat}, ${lng}, lat, lng) < 500
     GROUP BY hour_of_day ORDER BY hour_of_day
   `
 
@@ -19,9 +18,9 @@ export async function GET(request: NextRequest) {
       COUNT(*) FILTER (WHERE hour_of_day BETWEEN 12 AND 17) AS afternoon,
       COUNT(*) FILTER (WHERE hour_of_day BETWEEN 18 AND 23) AS evening
     FROM checkins
-    WHERE haversine(${lat}, ${lng}, lat, lng) < 500
     GROUP BY day_of_week ORDER BY day_of_week
   `
+
 
   return NextResponse.json({
     hourly: hourly.map((r) => ({ hour: Number(r.hour), count: Number(r.count) })),

@@ -30,7 +30,8 @@ export default function NowPanel({ userLocation, selectedLocation, userId, gpsAc
   const [inputValue, setInputValue] = useState('')
   const [submitting, setSubmitting] = useState(false)
   
-  const hasWeakGPS = !!(gpsAccuracy && gpsAccuracy > 100)
+  const hasWeakGPS = !!(gpsAccuracy && gpsAccuracy > 3000)
+
 
   // Fetch posts on mount and every 30 seconds
   useEffect(() => {
@@ -208,24 +209,19 @@ export default function NowPanel({ userLocation, selectedLocation, userId, gpsAc
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && !hasWeakGPS && handleSubmit()}
-          placeholder={hasWeakGPS ? 'GPS signal weak...' : 'Drop a signal...'}
-          disabled={hasWeakGPS}
+          onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+          placeholder="Drop a signal..."
           className={`flex-1 border rounded-xl px-4 py-3 text-sm focus:outline-none transition-all duration-300 ${
-            hasWeakGPS
-              ? theme === 'dark'
-                ? 'bg-zinc-950/20 border-zinc-900 text-zinc-600'
-                : 'bg-zinc-50 border-zinc-200 text-zinc-400 cursor-not-allowed'
-              : theme === 'dark'
-                ? 'bg-zinc-950 border-zinc-800 text-white placeholder-zinc-500 focus:border-blue-500/50'
-                : 'bg-white border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-blue-500/50'
+            theme === 'dark'
+              ? 'bg-zinc-950 border-zinc-800 text-white placeholder-zinc-500 focus:border-blue-500/50'
+              : 'bg-white border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-blue-500/50'
           }`}
         />
         <button
           onClick={handleSubmit}
-          disabled={submitting || !inputValue.trim() || hasWeakGPS}
+          disabled={submitting || !inputValue.trim()}
           className={`px-4 rounded-xl flex items-center justify-center font-bold text-sm transition-all duration-300 ${
-            inputValue.trim() && !hasWeakGPS
+            inputValue.trim()
               ? 'bg-blue-500 text-white hover:bg-blue-600 active:scale-95 shadow-lg shadow-blue-500/20'
               : theme === 'dark'
                 ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
@@ -235,6 +231,7 @@ export default function NowPanel({ userLocation, selectedLocation, userId, gpsAc
           {submitting ? 'Sending...' : 'Drop'}
         </button>
       </div>
+
     </div>
   )
 }

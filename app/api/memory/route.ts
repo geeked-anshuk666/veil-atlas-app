@@ -7,12 +7,13 @@ export async function GET(request: NextRequest) {
   const lng = parseFloat(searchParams.get('lng') || '0')
 
   const memories = await sql`
-    SELECT id, content, year_label, created_at,
+    SELECT id, content, lat, lng, year_label, created_at,
       ROUND(haversine(${lat}, ${lng}, lat, lng)::numeric) AS distance_m
     FROM memories
     ORDER BY created_at DESC
     LIMIT 50
   `
+
 
   return NextResponse.json(memories)
 }

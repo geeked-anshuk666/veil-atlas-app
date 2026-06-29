@@ -33,6 +33,7 @@ interface ConfessionData {
   lat: number
   lng: number
   created_at: string
+  distance_m?: number
   is_mine?: boolean
 }
 
@@ -224,11 +225,63 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, sele
 
       <div className={`h-px ${theme === 'dark' ? 'bg-zinc-900' : 'bg-zinc-200'}`} />
 
-      {/* Confessions */}
+      {/* Confessions — action button FIRST, then list */}
       <div className="space-y-3">
-        <h3 className={`text-xs font-bold uppercase tracking-wide ${theme === 'dark' ? 'text-zinc-400' : 'text-zinc-600'}`}>
-          Anonymous Confessions
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className={`text-xs font-bold uppercase tracking-wide ${theme === 'dark' ? 'text-zinc-400' : 'text-zinc-600'}`}>
+            Anonymous Confessions
+          </h3>
+          {!showNewConfession && (
+            <button
+              onClick={() => setShowNewConfession(true)}
+              className="bg-amber-500 hover:bg-amber-600 text-black text-xs px-3 py-1.5 rounded-lg transition-all font-bold active:scale-[0.98]"
+            >
+              + confess
+            </button>
+          )}
+        </div>
+
+        {/* Inline confession input */}
+        {showNewConfession && (
+          <div className={`space-y-3 p-4 rounded-2xl border ${
+            theme === 'dark' ? 'bg-zinc-950/50 border-amber-500/30' : 'bg-amber-50 border-amber-300'
+          }`}>
+            <textarea
+              value={newConfessionText}
+              onChange={(e) => setNewConfessionText(e.target.value)}
+              placeholder="Whisper a secret about this place..."
+              className={`w-full border rounded-xl px-3.5 py-3 text-sm focus:outline-none transition-all resize-none h-24 ${
+                theme === 'dark'
+                  ? 'bg-zinc-950 border-zinc-800 text-white placeholder-zinc-600 focus:border-amber-500/50'
+                  : 'bg-white border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-amber-500/50'
+              }`}
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setShowNewConfession(false)
+                  setNewConfessionText('')
+                }}
+                className={`flex-1 text-sm py-2.5 rounded-xl transition-all font-semibold border ${
+                  theme === 'dark'
+                    ? 'border-zinc-800 text-zinc-300 hover:bg-zinc-900'
+                    : 'border-zinc-200 text-zinc-600 hover:bg-zinc-100'
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitConfession}
+                disabled={submitting || !newConfessionText.trim()}
+                className="flex-1 bg-amber-500 hover:bg-amber-600 disabled:bg-zinc-700 disabled:text-zinc-500 text-black text-sm py-2.5 rounded-xl transition-all font-bold active:scale-[0.98]"
+              >
+                {submitting ? 'Pinning...' : 'Pin Confession'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {confessions.length > 0 ? (
           <div className="space-y-3">
             {confessions.map((c) => {
@@ -238,14 +291,14 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, sele
                   key={c.id} 
                   id={`card-${c.id}`}
                   onClick={() => onCardSelect?.(c.lat, c.lng, c.id)}
-                  className={`rounded-2xl p-4 border border-l-2 italic text-sm leading-relaxed transition-all duration-300 cursor-pointer hover:bg-zinc-900/60 ${
+                  className={`rounded-2xl p-4 border border-l-2 italic text-sm leading-relaxed transition-all duration-300 cursor-pointer ${
                     isSelected
                       ? theme === 'dark'
                         ? 'bg-amber-500/10 border-amber-500 text-zinc-100 scale-[1.02]'
                         : 'bg-amber-50/50 border-amber-500 text-zinc-800 scale-[1.02]'
                       : theme === 'dark'
-                        ? 'bg-zinc-950/40 border-zinc-900 border-l-amber-500 text-zinc-200'
-                        : 'bg-white border-zinc-200 border-l-amber-500 text-zinc-700'
+                        ? 'bg-zinc-950/40 border-zinc-900 border-l-amber-500 text-zinc-200 hover:bg-zinc-900/60'
+                        : 'bg-white border-zinc-200 border-l-amber-500 text-zinc-700 hover:bg-zinc-50'
                   }`}
                   style={{
                     backdropFilter: 'blur(8px)',
@@ -253,10 +306,16 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, sele
                     boxShadow: isSelected ? '0 0 15px rgba(245, 158, 11, 0.4)' : undefined
                   }}
                 >
+                  {/* Full text — no truncation */}
                   &ldquo;{c.content}&rdquo;
                   <div className="flex justify-between items-center not-italic mt-3">
                     <div className="text-[10px] text-zinc-500 font-semibold tracking-wider uppercase">
                       left here {getRelativeTime(c.created_at)}
+                      {c.distance_m !== undefined && (
+                        <span className="ml-2 opacity-60">
+                          · {c.distance_m >= 1000 ? `~${(c.distance_m / 1000).toFixed(1)}km` : `~${Math.round(c.distance_m)}m`} away
+                        </span>
+                      )}
                     </div>
                     {c.is_mine && (
                       <button
@@ -270,64 +329,15 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, sele
                 </div>
               )
             })}
-
-
           </div>
         ) : (
           <div className={`text-center py-6 text-sm border border-dashed rounded-xl ${
             theme === 'dark' ? 'border-zinc-800 text-zinc-500' : 'border-zinc-300 text-zinc-600'
           }`}>
-            No confessions pinned here yet.
+            No confessions pinned here yet. Be the first.
           </div>
         )}
       </div>
-
-      {/* Input section */}
-      {!showNewConfession ? (
-        <button
-          onClick={() => setShowNewConfession(true)}
-          className="w-full bg-amber-500 hover:bg-amber-600 text-black text-sm py-3.5 rounded-xl transition-all font-bold shadow-lg shadow-amber-500/10 active:scale-[0.98]"
-        >
-          + leave your confession
-        </button>
-      ) : (
-        <div className={`space-y-3 p-4 rounded-2xl border ${
-          theme === 'dark' ? 'bg-zinc-950/50 border-zinc-900' : 'bg-zinc-50 border-zinc-200'
-        }`}>
-          <textarea
-            value={newConfessionText}
-            onChange={(e) => setNewConfessionText(e.target.value)}
-            placeholder="Whisper a secret about this place..."
-            className={`w-full border rounded-xl px-3.5 py-3 text-sm focus:outline-none transition-all resize-none h-24 ${
-              theme === 'dark'
-                ? 'bg-zinc-950 border-zinc-800 text-white placeholder-zinc-600 focus:border-amber-500/50'
-                : 'bg-white border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-amber-500/50'
-            }`}
-          />
-          <div className="flex gap-2">
-            <button
-              onClick={() => {
-                setShowNewConfession(false)
-                setNewConfessionText('')
-              }}
-              className={`flex-1 text-sm py-2.5 rounded-xl transition-all font-semibold border ${
-                theme === 'dark'
-                  ? 'border-zinc-800 text-zinc-300 hover:bg-zinc-900'
-                  : 'border-zinc-200 text-zinc-600 hover:bg-zinc-100'
-              }`}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmitConfession}
-              disabled={submitting || !newConfessionText.trim()}
-              className="flex-1 bg-amber-500 hover:bg-amber-600 disabled:bg-zinc-700 disabled:text-zinc-500 text-black text-sm py-2.5 rounded-xl transition-all font-bold active:scale-[0.98]"
-            >
-              Pin Confession
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

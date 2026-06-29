@@ -156,10 +156,17 @@ export default function TruthPanel({ userLocation, selectedLocation, userId, sel
 
   return (
     <div className="space-y-6 pt-2">
+      {/* Header + action button at top */}
       <div className="flex justify-between items-center">
         <h2 className={`text-xs font-bold uppercase tracking-wider ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>
           👁 documented nearby
         </h2>
+        <button
+          onClick={() => setShowModal(true)}
+          className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1.5 rounded-lg transition-all font-semibold active:scale-[0.98]"
+        >
+          + Document Incident
+        </button>
       </div>
 
       {/* Incident count badge */}
@@ -271,23 +278,6 @@ export default function TruthPanel({ userLocation, selectedLocation, userId, sel
           </div>
         )}
       </div>
-
-      {/* Note */}
-      <div className={`text-[10px] leading-relaxed rounded-xl p-3 border ${
-        theme === 'dark' 
-          ? 'bg-zinc-950/20 border-zinc-900 text-zinc-500' 
-          : 'bg-zinc-50 border-zinc-200 text-zinc-600'
-      }`}>
-        🛡️ <strong>Privacy Protection:</strong> All records are anonymized, hashed, and aggregated geographically. Specific location coordinates and contributor hashes are never exposed.
-      </div>
-
-      {/* Action button */}
-      <button
-        onClick={() => setShowModal(true)}
-        className="w-full bg-red-600 hover:bg-red-700 text-white text-sm py-3.5 rounded-xl transition-all font-semibold shadow-lg shadow-red-600/10 active:scale-[0.98]"
-      >
-        Document an Incident
-      </button>
 
       {/* Modal */}
       {showModal && (

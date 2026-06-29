@@ -207,6 +207,34 @@ export default function NowPanel({
           ⚡ live signals
         </h2>
       </div>
+      {/* Input — at the TOP as action first */}
+      <div className={`flex gap-2 pb-2 border-b ${theme === 'dark' ? 'border-zinc-900' : 'border-zinc-200'}`}>
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+          placeholder="Drop a signal..."
+          className={`flex-1 border rounded-xl px-4 py-3 text-sm focus:outline-none transition-all duration-300 ${
+            theme === 'dark'
+              ? 'bg-zinc-950 border-zinc-800 text-white placeholder-zinc-500 focus:border-blue-500/50'
+              : 'bg-white border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-blue-500/50'
+          }`}
+        />
+        <button
+          onClick={handleSubmit}
+          disabled={submitting || !inputValue.trim()}
+          className={`px-4 rounded-xl flex items-center justify-center font-bold text-sm transition-all duration-300 ${
+            inputValue.trim()
+              ? 'bg-blue-500 text-white hover:bg-blue-600 active:scale-95 shadow-lg shadow-blue-500/20'
+              : theme === 'dark'
+                ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
+                : 'bg-zinc-100 text-zinc-400 cursor-not-allowed'
+          }`}
+        >
+          {submitting ? '...' : 'Drop'}
+        </button>
+      </div>
 
       {/* Posts feed */}
       <div className="space-y-3 max-h-[28rem] overflow-y-auto pr-2">
@@ -352,35 +380,6 @@ export default function NowPanel({
           ⚡ GPS signal weak — some features limited
         </div>
       )}
-
-      {/* Input */}
-      <div className={`flex gap-2 pt-4 border-t ${theme === 'dark' ? 'border-zinc-900' : 'border-zinc-200'}`}>
-        <input
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
-          placeholder="Drop a signal..."
-          className={`flex-1 border rounded-xl px-4 py-3 text-sm focus:outline-none transition-all duration-300 ${
-            theme === 'dark'
-              ? 'bg-zinc-950 border-zinc-800 text-white placeholder-zinc-500 focus:border-blue-500/50'
-              : 'bg-white border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-blue-500/50'
-          }`}
-        />
-        <button
-          onClick={handleSubmit}
-          disabled={submitting || !inputValue.trim()}
-          className={`px-4 rounded-xl flex items-center justify-center font-bold text-sm transition-all duration-300 ${
-            inputValue.trim()
-              ? 'bg-blue-500 text-white hover:bg-blue-600 active:scale-95 shadow-lg shadow-blue-500/20'
-              : theme === 'dark'
-                ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
-                : 'bg-zinc-100 text-zinc-400 cursor-not-allowed'
-          }`}
-        >
-          {submitting ? 'Sending...' : 'Drop'}
-        </button>
-      </div>
     </div>
   )
 }

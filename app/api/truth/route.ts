@@ -69,13 +69,16 @@ export async function POST(request: NextRequest) {
     const todErr = validateEnum(time_of_day, VALID_TIMES_OF_DAY, 'time_of_day')
     if (todErr) return NextResponse.json({ error: todErr }, { status: 400 })
 
-    const userErr = validateText(user_id, 'user_id', { max: 200 })
-    if (userErr) return NextResponse.json({ error: userErr }, { status: 400 })
+    // user_id is optional — it is a pseudonymous client hash, may be absent
+    const contributorHash =
+      typeof user_id === 'string' && user_id.trim().length > 0
+        ? require('crypto').createHash('sha256').update(user_id.trim()).digest('hex')
+        : null
 
     await sql`
       INSERT INTO incidents (lat, lng, incident_type, time_of_day, day_of_week, contributor_hash)
       VALUES (${lat}, ${lng}, ${incident_type}, ${time_of_day},
-        ${new Date().getDay()}, encode(sha256(${user_id}::bytea), 'hex'))
+        ${new Date().getDay()}, ${contributorHash})
     `
     return NextResponse.json({ success: true })
   } catch (error) {

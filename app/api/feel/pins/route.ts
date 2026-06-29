@@ -13,11 +13,14 @@ export async function GET(request: NextRequest) {
   const userId = searchParams.get('user_id') || ''
   const myHash = userId ? hashUserId(userId) : ''
 
+  // Return all pins (show all confessions globally, ordered by newest)
+  // Also include distance so panel can sort/filter
   const pins = await sql`
-    SELECT id, content, lat, lng, created_at, contributor_hash
+    SELECT id, content, lat, lng, created_at, contributor_hash,
+      haversine(${lat}, ${lng}, lat, lng) as distance_m
     FROM static_pins
     ORDER BY created_at DESC
-    LIMIT 50
+    LIMIT 100
   `
 
   return NextResponse.json({
@@ -27,6 +30,7 @@ export async function GET(request: NextRequest) {
       lat: Number(p.lat),
       lng: Number(p.lng),
       created_at: p.created_at,
+      distance_m: Number(p.distance_m),
       is_mine: myHash ? p.contributor_hash === myHash : false,
     })),
   })

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import sql from '@/lib/db'
+import { validateCoords, validateText, checkRateLimit, getClientIp } from '@/lib/validate'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
@@ -39,18 +40,38 @@ export async function GET(request: NextRequest) {
 
 
 export async function POST(request: NextRequest) {
-  try {
-    const { lat, lng, content, for_whom, radius_m, expires_days } = await request.json()
-    if (!lat || !lng || !content)
-      return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+  // Rate limit: 5 echoes per minute per IP
+  const ip = getClientIp(request)
+  if (!checkRateLimit(ip, 5, 60_000))
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
-    const expires_at = expires_days
-      ? new Date(Date.now() + expires_days * 86400000).toISOString()
+  try {
+    const body = await request.json()
+    const { lat, lng, content, for_whom, radius_m, expires_days } = body
+
+    const coordErr = validateCoords(lat, lng)
+    if (coordErr) return NextResponse.json({ error: coordErr }, { status: 400 })
+
+    const contentErr = validateText(content, 'content', { min: 1, max: 500 })
+    if (contentErr) return NextResponse.json({ error: contentErr }, { status: 400 })
+
+    // Optional for_whom — cap length
+    if (for_whom !== undefined && for_whom !== null) {
+      const fwErr = validateText(for_whom, 'for_whom', { max: 100 })
+      if (fwErr) return NextResponse.json({ error: fwErr }, { status: 400 })
+    }
+
+    // Clamp radius and expiry to safe ranges
+    const safeRadius = Math.min(Math.max(Number(radius_m) || 30, 10), 5000)
+    const safeDays = expires_days ? Math.min(Math.max(Number(expires_days), 1), 365) : null
+
+    const expires_at = safeDays
+      ? new Date(Date.now() + safeDays * 86400000).toISOString()
       : null
 
     await sql`
       INSERT INTO echoes (lat, lng, content, for_whom, radius_m, expires_at)
-      VALUES (${lat}, ${lng}, ${content}, ${for_whom || null}, ${radius_m || 30}, ${expires_at})
+      VALUES (${lat}, ${lng}, ${content}, ${for_whom || null}, ${safeRadius}, ${expires_at})
     `
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -58,3 +79,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+

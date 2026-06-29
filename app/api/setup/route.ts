@@ -1,7 +1,15 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import sql from '@/lib/db'
 
-export async function GET() {
+const SETUP_SECRET = process.env.SETUP_SECRET || ''
+
+export async function GET(request: NextRequest) {
+    // Protect this admin-only route with a secret header
+    const providedSecret = request.headers.get('x-setup-secret') || ''
+    if (!SETUP_SECRET || providedSecret !== SETUP_SECRET) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`
 
     await sql`CREATE OR REPLACE FUNCTION haversine(lat1 FLOAT, lng1 FLOAT, lat2 FLOAT, lng2 FLOAT)

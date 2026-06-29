@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import sql from '@/lib/db'
+import { validateCoords, validateText, checkRateLimit, getClientIp } from '@/lib/validate'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
@@ -34,10 +35,20 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Rate limit check-ins: 1 per minute per IP (passive background call)
+  const ip = getClientIp(request)
+  if (!checkRateLimit(ip, 1, 60_000))
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+
   try {
-    const { lat, lng, user_id } = await request.json()
-    if (!lat || !lng || !user_id)
-      return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+    const body = await request.json()
+    const { lat, lng, user_id } = body
+
+    const coordErr = validateCoords(lat, lng)
+    if (coordErr) return NextResponse.json({ error: coordErr }, { status: 400 })
+
+    const userErr = validateText(user_id, 'user_id', { max: 200 })
+    if (userErr) return NextResponse.json({ error: userErr }, { status: 400 })
 
     const now = new Date()
     await sql`
@@ -51,3 +62,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+

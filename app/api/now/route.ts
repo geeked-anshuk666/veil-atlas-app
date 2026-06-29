@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { dynamoNow, NOW_TABLE } from '@/lib/dynamo'
 import { QueryCommand, PutCommand } from '@aws-sdk/lib-dynamodb'
 import { geoCell, neighborCells, haversine } from '@/lib/geo'
+import { validateCoords, validateText, checkRateLimit, getClientIp } from '@/lib/validate'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
@@ -68,10 +69,23 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Rate limit: 5 posts per minute per IP
+  const ip = getClientIp(request)
+  if (!checkRateLimit(ip, 5, 60_000))
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+
   try {
-    const { lat, lng, content, user_id } = await request.json()
-    if (!lat || !lng || !content || !user_id)
-      return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+    const body = await request.json()
+    const { lat, lng, content, user_id } = body
+
+    const coordErr = validateCoords(lat, lng)
+    if (coordErr) return NextResponse.json({ error: coordErr }, { status: 400 })
+
+    const contentErr = validateText(content, 'content', { min: 1, max: 500 })
+    if (contentErr) return NextResponse.json({ error: contentErr }, { status: 400 })
+
+    const userErr = validateText(user_id, 'user_id', { max: 200 })
+    if (userErr) return NextResponse.json({ error: userErr }, { status: 400 })
 
     const cell = geoCell(lat, lng)
     const now = Date.now()
@@ -96,3 +110,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+

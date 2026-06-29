@@ -8,7 +8,9 @@ interface FeelPanelProps {
   selectedLocation: [number, number] | null
   userId: string
   selectedPinId?: string | null
+  onCardSelect?: (lat: number, lng: number, pinId: string) => void
   onRefreshMapData?: () => void
+
 
 }
 
@@ -28,10 +30,14 @@ interface FeelData {
 interface ConfessionData {
   id: string
   content: string
+  lat: number
+  lng: number
   created_at: string
 }
 
-export default function FeelPanel({ userLocation, selectedLocation, userId, selectedPinId, onRefreshMapData }: FeelPanelProps) {
+
+export default function FeelPanel({ userLocation, selectedLocation, userId, selectedPinId, onCardSelect, onRefreshMapData }: FeelPanelProps) {
+
 
   const { theme } = useTheme()
   const [feel, setFeel] = useState<FeelData | null>(null)
@@ -217,7 +223,8 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, sele
                 <div 
                   key={c.id} 
                   id={`card-${c.id}`}
-                  className={`rounded-2xl p-4 border border-l-2 italic text-sm leading-relaxed transition-all duration-300 ${
+                  onClick={() => onCardSelect?.(c.lat, c.lng, c.id)}
+                  className={`rounded-2xl p-4 border border-l-2 italic text-sm leading-relaxed transition-all duration-300 cursor-pointer hover:bg-zinc-900/60 ${
                     isSelected
                       ? theme === 'dark'
                         ? 'bg-amber-500/10 border-amber-500 text-zinc-100 scale-[1.02]'
@@ -239,6 +246,7 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, sele
                 </div>
               )
             })}
+
 
           </div>
         ) : (

@@ -9,11 +9,14 @@ interface MemoryPanelProps {
   selectedLocation: [number, number] | null
   userId: string
   selectedPinId?: string | null
+  onCardSelect?: (lat: number, lng: number, pinId: string) => void
   onRefreshMapData?: () => void
+
 
 }
 
-export default function MemoryPanel({ userLocation, selectedLocation, userId, selectedPinId, onRefreshMapData }: MemoryPanelProps) {
+export default function MemoryPanel({ userLocation, selectedLocation, userId, selectedPinId, onCardSelect, onRefreshMapData }: MemoryPanelProps) {
+
 
   const { theme } = useTheme()
   const [memories, setMemories] = useState<Memory[]>([])
@@ -238,7 +241,8 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, se
                 <div 
                   key={mem.id} 
                   id={`card-${mem.id}`}
-                  className={`rounded-2xl p-4 border border-l-2 transition-all duration-300 ${
+                  onClick={() => onCardSelect?.(mem.lat, mem.lng, mem.id)}
+                  className={`rounded-2xl p-4 border border-l-2 transition-all duration-300 cursor-pointer hover:bg-zinc-900/60 ${
                     isSelected
                       ? theme === 'dark'
                         ? 'bg-purple-500/10 border-purple-500 text-zinc-100 scale-[1.02]'
@@ -262,6 +266,7 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, se
                 </div>
               )
             })}
+
 
           </div>
         ) : (

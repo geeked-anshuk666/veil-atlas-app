@@ -26,10 +26,15 @@ const CARTODB_ATTRIBUTION = '© OpenStreetMap contributors © CARTO'
 function MapClickHandler({ onMapClick, activeLayer }: { onMapClick?: (lat: number, lng: number) => void; activeLayer: string }) {
   useMapEvent('click', (e) => {
     if (activeLayer === 'now') return // Now layer doesn't allow clicks
+    const target = e.originalEvent.target as HTMLElement
+    if (target && (target.classList.contains('leaflet-interactive') || target.closest('.leaflet-interactive'))) {
+      return // Ignore map click if clicking a marker
+    }
     onMapClick?.(e.latlng.lat, e.latlng.lng)
   })
   return null
 }
+
 
 // Helper component to handle flyTo for selected locations
 function FlyToLocation({ selectedLocation }: { selectedLocation: [number, number] | null }) {

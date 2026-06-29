@@ -26,7 +26,9 @@ interface TruthPanelProps {
   selectedLocation: [number, number] | null
   userId: string
   selectedPinId?: string | null
+  onCardSelect?: (lat: number, lng: number, pinId: string) => void
   onRefreshMapData?: () => void
+
 
 }
 
@@ -37,7 +39,8 @@ const incidentTypes = [
   'Exclusion',
 ]
 
-export default function TruthPanel({ userLocation, selectedLocation, userId, selectedPinId, onRefreshMapData }: TruthPanelProps) {
+export default function TruthPanel({ userLocation, selectedLocation, userId, selectedPinId, onCardSelect, onRefreshMapData }: TruthPanelProps) {
+
 
   const { theme } = useTheme()
   const [data, setData] = useState<TruthData | null>(null)
@@ -191,7 +194,8 @@ export default function TruthPanel({ userLocation, selectedLocation, userId, sel
                 <div 
                   key={item.id}
                   id={`card-${item.id}`}
-                  className={`rounded-xl p-4 border border-l-2 transition-all duration-300 ${
+                  onClick={() => onCardSelect?.(item.lat, item.lng, item.id)}
+                  className={`rounded-xl p-4 border border-l-2 transition-all duration-300 cursor-pointer hover:bg-zinc-900/60 ${
                     isSelected
                       ? theme === 'dark'
                         ? 'bg-red-500/10 border-red-500 text-zinc-100 scale-[1.02]'
@@ -224,6 +228,7 @@ export default function TruthPanel({ userLocation, selectedLocation, userId, sel
                 </div>
               )
             })}
+
 
           </div>
         ) : (

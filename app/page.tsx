@@ -58,8 +58,10 @@ export default function HomePage() {
     const onboarded = localStorage.getItem('veil_onboarded')
     if (onboarded !== 'true') setShowOnboarding(true)
 
+    // Get geolocation with active real-time tracking
+    let watchId: number | undefined
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
+      watchId = navigator.geolocation.watchPosition(
         (position) => {
           const { latitude, longitude, accuracy } = position.coords
           setUserLocation([latitude, longitude])
@@ -70,11 +72,18 @@ export default function HomePage() {
         () => {
           setHasLocationPermission(false)
           setIsGeolocating(false)
-        }
+        },
+        { enableHighAccuracy: true }
       )
     } else {
       setHasLocationPermission(false)
       setIsGeolocating(false)
+    }
+
+    return () => {
+      if (watchId !== undefined) {
+        navigator.geolocation.clearWatch(watchId)
+      }
     }
   }, [])
 
@@ -278,6 +287,7 @@ export default function HomePage() {
             selectedLocation={selectedLocation}
             userId={userId}
             selectedPinId={selectedPinId}
+            onCardSelect={handleMapClick}
             onRefreshMapData={() => handleRefreshMapData()}
           />
         )}
@@ -287,6 +297,7 @@ export default function HomePage() {
             selectedLocation={selectedLocation}
             userId={userId}
             selectedPinId={selectedPinId}
+            onCardSelect={handleMapClick}
             onRefreshMapData={() => handleRefreshMapData()}
           />
         )}
@@ -296,9 +307,11 @@ export default function HomePage() {
             selectedLocation={selectedLocation}
             userId={userId}
             selectedPinId={selectedPinId}
+            onCardSelect={handleMapClick}
             onRefreshMapData={() => handleRefreshMapData()}
           />
         )}
+
         {activeLayer === 'rhythm' && (
           <RhythmPanel userLocation={userLocation} selectedLocation={selectedLocation} />
         )}

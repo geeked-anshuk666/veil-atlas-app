@@ -29,6 +29,9 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, se
   const [echoText, setEchoText] = useState('')
   const [echoFor, setEchoFor] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
+  const [editYear, setEditYear] = useState('')
 
   const targetLocation = selectedLocation || userLocation
 
@@ -50,7 +53,7 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, se
       try {
         setLoading(true)
         const [memRes, echoRes] = await Promise.all([
-          fetch(`/api/memory?lat=${targetLocation[0]}&lng=${targetLocation[1]}`),
+          fetch(`/api/memory?lat=${targetLocation[0]}&lng=${targetLocation[1]}&user_id=${encodeURIComponent(userId)}`),
           fetch(`/api/echo?lat=${targetLocation[0]}&lng=${targetLocation[1]}`),
         ])
         const memData = await memRes.json()
@@ -89,16 +92,41 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, se
       setShowNewMemory(false)
       // Refetch
       const res = await fetch(
-        `/api/memory?lat=${targetLocation[0]}&lng=${targetLocation[1]}`
+        `/api/memory?lat=${targetLocation[0]}&lng=${targetLocation[1]}&user_id=${encodeURIComponent(userId)}`
       )
       const data = await res.json()
       setMemories(Array.isArray(data) ? data : [])
-
       onRefreshMapData?.()
     } catch (error) {
       console.error('[v0] Error submitting memory:', error)
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleDeleteMemory = async (id: string) => {
+    try {
+      await fetch(`/api/memory?id=${id}&user_id=${encodeURIComponent(userId)}`, {
+        method: 'DELETE',
+      })
+      setMemories((prev) => prev.filter((m) => m.id !== id))
+      onRefreshMapData?.()
+    } catch (e) {
+      console.error('Failed to delete memory:', e)
+    }
+  }
+
+  const handleSaveEdit = async (id: string) => {
+    try {
+      await fetch('/api/memory', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, user_id: userId, content: editText, year_label: editYear }),
+      })
+      setMemories((prev) => prev.map((m) => m.id === id ? { ...m, content: editText, year_label: editYear } : m))
+      setEditingMemoryId(null)
+    } catch (e) {
+      console.error('Failed to edit memory:', e)
     }
   }
 
@@ -246,10 +274,10 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, se
             {memories.map((mem) => {
               const isSelected = mem.id === selectedPinId
               return (
-                <div 
-                  key={mem.id} 
+                <div
+                  key={mem.id}
                   id={`card-${mem.id}`}
-                  onClick={() => onCardSelect?.(mem.lat, mem.lng, mem.id)}
+                  onClick={() => editingMemoryId !== mem.id && onCardSelect?.(mem.lat, mem.lng, mem.id)}
                   className={`rounded-2xl p-4 border border-l-2 transition-all duration-300 cursor-pointer hover:bg-zinc-900/60 ${
                     isSelected
                       ? theme === 'dark'
@@ -269,8 +297,48 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, se
                     <span className="text-[10px] font-extrabold tracking-wider bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded-full uppercase">
                       Year: {mem.year_label}
                     </span>
+                    {(mem as any).is_mine && editingMemoryId !== mem.id && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setEditingMemoryId(mem.id); setEditText(mem.content); setEditYear(mem.year_label || '') }}
+                          className="text-[10px] uppercase font-bold tracking-wider text-purple-400 hover:text-purple-300 transition-colors"
+                        >
+                          ✏ edit
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDeleteMemory(mem.id) }}
+                          className="text-[10px] uppercase font-bold tracking-wider text-red-500 hover:text-red-400 transition-colors"
+                        >
+                          🗑 delete
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-sm leading-relaxed">{mem.content}</p>
+                  {editingMemoryId === mem.id ? (
+                    <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        value={editYear}
+                        onChange={(e) => setEditYear(e.target.value)}
+                        placeholder="Year"
+                        className={`w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none ${
+                          theme === 'dark' ? 'bg-zinc-900 border-zinc-700 text-white' : 'bg-white border-zinc-200 text-zinc-900'
+                        }`}
+                      />
+                      <textarea
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        className={`w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none resize-none h-20 ${
+                          theme === 'dark' ? 'bg-zinc-900 border-zinc-700 text-white' : 'bg-white border-zinc-200 text-zinc-900'
+                        }`}
+                      />
+                      <div className="flex gap-2">
+                        <button onClick={() => handleSaveEdit(mem.id)} className="flex-1 bg-purple-600 text-white text-xs py-1.5 rounded-lg font-bold">Save</button>
+                        <button onClick={() => setEditingMemoryId(null)} className="flex-1 border text-xs py-1.5 rounded-lg font-semibold border-zinc-700 text-zinc-400">Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm leading-relaxed">{mem.content}</p>
+                  )}
                 </div>
               )
             })}

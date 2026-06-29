@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
   const lat = parseFloat(searchParams.get('lat') || '0')
   const lng = parseFloat(searchParams.get('lng') || '0')
+  const userId = searchParams.get('user_id') || ''
 
   const rows = await sql`
     SELECT incident_type as type, COUNT(*) as count
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
   `
 
   const list = await sql`
-    SELECT id, incident_type as type, time_of_day, lat, lng, created_at,
+    SELECT id, incident_type as type, time_of_day, lat, lng, created_at, contributor_hash,
       haversine(${lat}, ${lng}, lat, lng) as distance
     FROM incidents
     WHERE created_at > NOW() - INTERVAL '1 year'
@@ -42,10 +43,11 @@ export async function GET(request: NextRequest) {
       lng: Number(item.lng),
       created_at: item.created_at,
       distance: Number(item.distance),
+      is_mine: userId
+        ? item.contributor_hash === require('crypto').createHash('sha256').update(userId).digest('hex')
+        : false,
     })),
   })
-
-
 }
 
 export async function POST(request: NextRequest) {
@@ -82,3 +84,25 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  const { searchParams } = request.nextUrl
+  const id = searchParams.get('id')
+  const userId = searchParams.get('user_id')
+  if (!id || !userId)
+    return NextResponse.json({ error: 'Missing id or user_id' }, { status: 400 })
+
+  try {
+    const { createHash } = await import('crypto')
+    const myHash = createHash('sha256').update(userId).digest('hex')
+    const rows = await sql`SELECT contributor_hash FROM incidents WHERE id = ${id}`
+    if (!rows.length) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (rows[0].contributor_hash !== myHash)
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+
+    await sql`DELETE FROM incidents WHERE id = ${id}`
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('DELETE /api/truth error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

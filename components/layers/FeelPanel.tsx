@@ -33,6 +33,7 @@ interface ConfessionData {
   lat: number
   lng: number
   created_at: string
+  is_mine?: boolean
 }
 
 
@@ -69,7 +70,7 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, sele
         setLoading(true)
         const [feelRes, confessionRes] = await Promise.all([
           fetch(`/api/feel?lat=${targetLocation[0]}&lng=${targetLocation[1]}`),
-          fetch(`/api/feel/pins?lat=${targetLocation[0]}&lng=${targetLocation[1]}`),
+          fetch(`/api/feel/pins?lat=${targetLocation[0]}&lng=${targetLocation[1]}&user_id=${encodeURIComponent(userId)}`),
         ])
         const feelData = await feelRes.json()
         const confessionData = await confessionRes.json()
@@ -131,7 +132,7 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, sele
       setShowNewConfession(false)
       // Refetch
       const res = await fetch(
-        `/api/feel/pins?lat=${targetLocation[0]}&lng=${targetLocation[1]}`
+        `/api/feel/pins?lat=${targetLocation[0]}&lng=${targetLocation[1]}&user_id=${encodeURIComponent(userId)}`
       )
       const data = await res.json()
       setConfessions(data.pins || [])
@@ -140,6 +141,18 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, sele
       console.error('[v0] Error submitting confession:', error)
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleDeleteConfession = async (id: string) => {
+    try {
+      await fetch(`/api/feel/pins?id=${id}&user_id=${encodeURIComponent(userId)}`, {
+        method: 'DELETE',
+      })
+      setConfessions((prev) => prev.filter((c) => c.id !== id))
+      onRefreshMapData?.()
+    } catch (e) {
+      console.error('Failed to delete confession:', e)
     }
   }
 
@@ -241,8 +254,18 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, sele
                   }}
                 >
                   &ldquo;{c.content}&rdquo;
-                  <div className="text-[10px] text-zinc-500 font-semibold tracking-wider uppercase not-italic mt-3 text-right">
-                    left here {getRelativeTime(c.created_at)}
+                  <div className="flex justify-between items-center not-italic mt-3">
+                    <div className="text-[10px] text-zinc-500 font-semibold tracking-wider uppercase">
+                      left here {getRelativeTime(c.created_at)}
+                    </div>
+                    {c.is_mine && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDeleteConfession(c.id) }}
+                        className="text-[10px] uppercase font-bold tracking-wider text-red-500 hover:text-red-400 transition-colors"
+                      >
+                        🗑 delete
+                      </button>
+                    )}
                   </div>
                 </div>
               )

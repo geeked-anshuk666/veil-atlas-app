@@ -177,7 +177,6 @@ export default function HomePage() {
 
   // --- HANDLERS ---
   const handleMapClick = (lat: number, lng: number, pinId?: string) => {
-    if (activeLayer === 'now') return
     setSelectedLocation([lat, lng])
     setIsSheetOpen(true)
     setSelectedPinId(pinId || null)
@@ -278,6 +277,8 @@ export default function HomePage() {
             selectedLocation={selectedLocation}
             userId={userId}
             gpsAccuracy={gpsAccuracy || undefined}
+            selectedPinId={selectedPinId}
+            onCardSelect={handleMapClick}
             onRefreshMapData={() => handleRefreshMapData()}
           />
         )}

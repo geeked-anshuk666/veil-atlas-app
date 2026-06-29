@@ -10,6 +10,9 @@ interface IncidentItem {
   time_of_day: string
   created_at: string
   distance: number
+  lat: number
+  lng: number
+  is_mine?: boolean
 }
 
 interface TruthData {
@@ -67,7 +70,7 @@ export default function TruthPanel({ userLocation, selectedLocation, userId, sel
       try {
         setLoading(true)
         const response = await fetch(
-          `/api/truth?lat=${targetLocation[0]}&lng=${targetLocation[1]}`
+          `/api/truth?lat=${targetLocation[0]}&lng=${targetLocation[1]}&user_id=${encodeURIComponent(userId)}`
         )
         const truthData = await response.json()
         setData(truthData)
@@ -100,15 +103,30 @@ export default function TruthPanel({ userLocation, selectedLocation, userId, sel
         }),
       })
       setShowModal(false)
-      // Refetch
       const response = await fetch(
-        `/api/truth?lat=${targetLocation[0]}&lng=${targetLocation[1]}`
+        `/api/truth?lat=${targetLocation[0]}&lng=${targetLocation[1]}&user_id=${encodeURIComponent(userId)}`
       )
       const truthData = await response.json()
       setData(truthData)
       onRefreshMapData?.()
     } catch (error) {
       console.error('[v0] Error submitting incident:', error)
+    }
+  }
+
+  const handleDeleteIncident = async (id: string) => {
+    try {
+      await fetch(`/api/truth?id=${id}&user_id=${encodeURIComponent(userId)}`, {
+        method: 'DELETE',
+      })
+      setData((prev) => prev ? {
+        ...prev,
+        list: (prev.list || []).filter((i) => i.id !== id),
+        total: Math.max(0, prev.total - 1),
+      } : prev)
+      onRefreshMapData?.()
+    } catch (e) {
+      console.error('Failed to delete incident:', e)
     }
   }
 
@@ -226,8 +244,17 @@ export default function TruthPanel({ userLocation, selectedLocation, userId, sel
                       </div>
                       <div className="flex justify-between items-center mt-3 text-xs text-zinc-500 font-medium">
                         <span>{formatDistance(item.distance)} away</span>
-                        <span>·</span>
-                        <span>{getRelativeTime(item.created_at)}</span>
+                        <div className="flex items-center gap-2">
+                          {item.is_mine && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteIncident(item.id) }}
+                              className="text-[10px] uppercase font-bold tracking-wider text-red-500 hover:text-red-400 transition-colors"
+                            >
+                              🗑 delete
+                            </button>
+                          )}
+                          <span>{getRelativeTime(item.created_at)}</span>
+                        </div>
                       </div>
                     </div>
                   )

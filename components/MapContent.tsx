@@ -22,6 +22,21 @@ const CARTODB_DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{
 const CARTODB_LIGHT_TILES = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
 const CARTODB_ATTRIBUTION = '© OpenStreetMap contributors © CARTO'
 
+/**
+ * Deterministic radial jitter — pins at the same GPS coords spread out like a
+ * flower so each is individually clickable. Uses the pin's UUID characters as
+ * a seed so the same pin always renders at the same offset (no jumping).
+ * Max spread: ~8 metres (0.00008 degrees).
+ */
+function jitterCoord(id: string, lat: number, lng: number): [number, number] {
+  // Derive two pseudo-random numbers from the first 8 chars of the UUID
+  const seed1 = parseInt(id.replace(/-/g, '').slice(0, 4), 16) / 0xffff
+  const seed2 = parseInt(id.replace(/-/g, '').slice(4, 8), 16) / 0xffff
+  const angle = seed1 * 2 * Math.PI
+  const radius = seed2 * 0.00008 // ~8m max
+  return [lat + Math.sin(angle) * radius, lng + Math.cos(angle) * radius]
+}
+
 // Helper component to capture map clicks
 function MapClickHandler({ onMapClick, activeLayer }: { onMapClick?: (lat: number, lng: number) => void; activeLayer: string }) {
   useMapEvent('click', (e) => {
@@ -112,23 +127,32 @@ export default function MapContent({
 
         {/* Now layer - blue pulsing dots */}
         {activeLayer === 'now' &&
-          nowPosts.map((post) => (
-            <CircleMarker
-              key={post.id}
-              center={new LatLng(post.lat, post.lng)}
-              radius={8}
-              fillOpacity={0.8}
-              color="#3b82f6"
-              fillColor="#3b82f6"
-              weight={2}
-              className="pulse-marker"
-            >
-              <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
-                <span>⚡ Live Signal: &ldquo;{post.content.slice(0, 30)}...&rdquo;</span>
-              </Tooltip>
-              <Popup>{post.content}</Popup>
-            </CircleMarker>
-          ))}
+          nowPosts.map((post) => {
+            const [jLat, jLng] = jitterCoord(post.id, post.lat, post.lng)
+            return (
+              <CircleMarker
+                key={post.id}
+                center={new LatLng(jLat, jLng)}
+                radius={8}
+                fillOpacity={0.8}
+                color="#3b82f6"
+                fillColor="#3b82f6"
+                weight={2}
+                className="pulse-marker"
+                eventHandlers={{
+                  click: (e) => {
+                    e.originalEvent.stopPropagation()
+                    onMapClick?.(post.lat, post.lng, post.id)
+                  },
+                }}
+              >
+                <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
+                  <span>⚡ Live Signal: &ldquo;{post.content.slice(0, 30)}...&rdquo;</span>
+                </Tooltip>
+                <Popup>{post.content}</Popup>
+              </CircleMarker>
+            )
+          })}
 
         {/* Feel layer - amber semi-transparent circle around user + confessions + moods */}
         {activeLayer === 'feel' && (
@@ -146,116 +170,120 @@ export default function MapContent({
         {/* Confession markers */}
         {activeLayer === 'feel' &&
           feelConfessions &&
-          feelConfessions.map((c) => (
-            <CircleMarker
-              key={c.id}
-              center={new LatLng(c.lat, c.lng)}
-              radius={8}
-              fillOpacity={0.8}
-              color="#fbbf24"
-              fillColor="#fbbf24"
-              weight={2}
-              className="pulse-marker"
-              eventHandlers={{
-                click: (e) => {
-                  e.originalEvent.stopPropagation()
-                  onMapClick?.(c.lat, c.lng, c.id)
-                },
-              }}
-
-
-            >
-              <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
-                <span>🌡 Confession: &ldquo;{c.content.slice(0, 30)}...&rdquo;</span>
-              </Tooltip>
-              <Popup>&ldquo;{c.content}&rdquo;</Popup>
-            </CircleMarker>
-          ))}
+          feelConfessions.map((c) => {
+            const [jLat, jLng] = jitterCoord(c.id, c.lat, c.lng)
+            return (
+              <CircleMarker
+                key={c.id}
+                center={new LatLng(jLat, jLng)}
+                radius={8}
+                fillOpacity={0.8}
+                color="#fbbf24"
+                fillColor="#fbbf24"
+                weight={2}
+                className="pulse-marker"
+                eventHandlers={{
+                  click: (e) => {
+                    e.originalEvent.stopPropagation()
+                    onMapClick?.(c.lat, c.lng, c.id)
+                  },
+                }}
+              >
+                <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
+                  <span>🌡 Confession: &ldquo;{c.content.slice(0, 30)}...&rdquo;</span>
+                </Tooltip>
+                <Popup>&ldquo;{c.content}&rdquo;</Popup>
+              </CircleMarker>
+            )
+          })}
 
         {/* Mood markers */}
         {activeLayer === 'feel' &&
           feelMoods &&
-          feelMoods.map((m) => (
-            <CircleMarker
-              key={m.id}
-              center={new LatLng(m.lat, m.lng)}
-              radius={9}
-              fillOpacity={0.85}
-              color="white"
-              fillColor={getEmotionColor(m.emotion)}
-              weight={2}
-              className="pulse-marker"
-              eventHandlers={{
-                click: (e) => {
-                  e.originalEvent.stopPropagation()
-                  onMapClick?.(m.lat, m.lng, m.id)
-                },
-              }}
-
-
-            >
-              <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
-                <span>{getEmotionEmoji(m.emotion)} Feeling: {m.emotion}</span>
-              </Tooltip>
-              <Popup>Logged mood: {m.emotion} {getEmotionEmoji(m.emotion)}</Popup>
-            </CircleMarker>
-          ))}
+          feelMoods.map((m) => {
+            const [jLat, jLng] = jitterCoord(m.id, m.lat, m.lng)
+            return (
+              <CircleMarker
+                key={m.id}
+                center={new LatLng(jLat, jLng)}
+                radius={9}
+                fillOpacity={0.85}
+                color="white"
+                fillColor={getEmotionColor(m.emotion)}
+                weight={2}
+                className="pulse-marker"
+                eventHandlers={{
+                  click: (e) => {
+                    e.originalEvent.stopPropagation()
+                    onMapClick?.(m.lat, m.lng, m.id)
+                  },
+                }}
+              >
+                <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
+                  <span>{getEmotionEmoji(m.emotion)} Feeling: {m.emotion}</span>
+                </Tooltip>
+                <Popup>Logged mood: {m.emotion} {getEmotionEmoji(m.emotion)}</Popup>
+              </CircleMarker>
+            )
+          })}
 
         {/* Truth layer - red incident markers */}
         {activeLayer === 'truth' &&
           truthIncidents &&
-          truthIncidents.map((incident) => (
-            <CircleMarker
-              key={incident.id}
-              center={new LatLng(incident.lat, incident.lng)}
-              radius={8}
-              fillOpacity={0.8}
-              color="#ef4444"
-              fillColor="#ef4444"
-              weight={2}
-              className="pulse-marker"
-              eventHandlers={{
-                click: (e) => {
-                  e.originalEvent.stopPropagation()
-                  onMapClick?.(incident.lat, incident.lng, incident.id)
-                },
-              }}
-
-
-            >
-              <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
-                <span>👁 Documented Incident: {incident.type}</span>
-              </Tooltip>
-              <Popup>{incident.type} ({incident.time_of_day})</Popup>
-            </CircleMarker>
-          ))}
+          truthIncidents.map((incident) => {
+            const [jLat, jLng] = jitterCoord(incident.id, incident.lat, incident.lng)
+            return (
+              <CircleMarker
+                key={incident.id}
+                center={new LatLng(jLat, jLng)}
+                radius={8}
+                fillOpacity={0.8}
+                color="#ef4444"
+                fillColor="#ef4444"
+                weight={2}
+                className="pulse-marker"
+                eventHandlers={{
+                  click: (e) => {
+                    e.originalEvent.stopPropagation()
+                    onMapClick?.(incident.lat, incident.lng, incident.id)
+                  },
+                }}
+              >
+                <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
+                  <span>👁 Documented Incident: {incident.type}</span>
+                </Tooltip>
+                <Popup>{incident.type} ({incident.time_of_day})</Popup>
+              </CircleMarker>
+            )
+          })}
 
         {/* Memory layer - purple markers at memory coordinates */}
         {activeLayer === 'memory' &&
-          memories.map((memory) => (
-            <CircleMarker
-              key={memory.id}
-              center={new LatLng(memory.lat, memory.lng)}
-              radius={7}
-              fillOpacity={0.8}
-              color="#a855f7"
-              fillColor="#a855f7"
-              weight={2}
-              eventHandlers={{
-                click: (e) => {
-                  e.originalEvent.stopPropagation()
-                  onMapClick?.(memory.lat, memory.lng, memory.id)
-                },
-              }}
-
-
-            >
-              <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
-                <span>🕰 Memory logged for: {memory.year_label}</span>
-              </Tooltip>
-              <Popup>{memory.year_label}</Popup>
-            </CircleMarker>
-          ))}
+          memories.map((memory) => {
+            const [jLat, jLng] = jitterCoord(memory.id, memory.lat, memory.lng)
+            return (
+              <CircleMarker
+                key={memory.id}
+                center={new LatLng(jLat, jLng)}
+                radius={7}
+                fillOpacity={0.8}
+                color="#a855f7"
+                fillColor="#a855f7"
+                weight={2}
+                eventHandlers={{
+                  click: (e) => {
+                    e.originalEvent.stopPropagation()
+                    onMapClick?.(memory.lat, memory.lng, memory.id)
+                  },
+                }}
+              >
+                <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
+                  <span>🕰 Memory logged for: {memory.year_label}</span>
+                </Tooltip>
+                <Popup>{memory.year_label}</Popup>
+              </CircleMarker>
+            )
+          })}
 
         {/* Rhythm layer - green intensity overlay */}
         {activeLayer === 'rhythm' && (

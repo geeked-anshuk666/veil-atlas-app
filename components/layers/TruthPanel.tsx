@@ -190,43 +190,48 @@ export default function TruthPanel({ userLocation, selectedLocation, userId, sel
           <div className="space-y-2.5">
             {data.list.map((item) => {
               const isSelected = item.id === selectedPinId
-              return (
-                <div 
-                  key={item.id}
-                  id={`card-${item.id}`}
-                  onClick={() => onCardSelect?.(item.lat, item.lng, item.id)}
-                  className={`rounded-xl p-4 border border-l-2 transition-all duration-300 cursor-pointer hover:bg-zinc-900/60 ${
-                    isSelected
-                      ? theme === 'dark'
-                        ? 'bg-red-500/10 border-red-500 text-zinc-100 scale-[1.02]'
-                        : 'bg-red-50/50 border-red-500 text-zinc-800 scale-[1.02]'
-                      : theme === 'dark'
-                        ? 'bg-zinc-950/40 border-zinc-900 border-l-red-500 hover:border-zinc-800 hover:border-l-red-500'
-                        : 'bg-white border-zinc-200 border-l-red-500 hover:border-zinc-300 hover:border-l-red-500'
-                  }`}
-                  style={{
-                    backdropFilter: 'blur(8px)',
-                    WebkitBackdropFilter: 'blur(8px)',
-                    boxShadow: isSelected ? '0 0 15px rgba(239, 68, 68, 0.4)' : undefined
-                  }}
-                >
-                  <div className="flex justify-between items-start">
-                    <span className={`text-sm font-semibold ${theme === 'dark' ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                      {item.type}
-                    </span>
-                    <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${
-                      theme === 'dark' ? 'bg-zinc-900 text-zinc-400' : 'bg-zinc-100 text-zinc-600'
-                    }`}>
-                      {item.time_of_day}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center mt-3 text-xs text-zinc-500 font-medium">
-                    <span>~{Math.round(item.distance)}m away</span>
-                    <span>·</span>
-                    <span>{getRelativeTime(item.created_at)}</span>
-                  </div>
-                </div>
-              )
+                  const formatDistance = (meters: number) => {
+                    if (meters >= 1000) return `~${(meters / 1000).toFixed(1)} km`
+                    return `~${Math.round(meters)}m`
+                  }
+                  return (
+                    <div 
+                      key={item.id}
+                      id={`card-${item.id}`}
+                      onClick={() => onCardSelect?.(item.lat, item.lng, item.id)}
+                      className={`rounded-xl p-4 border border-l-2 transition-all duration-300 cursor-pointer hover:bg-zinc-900/60 ${
+                        isSelected
+                          ? theme === 'dark'
+                            ? 'bg-red-500/10 border-red-500 text-zinc-100 scale-[1.02]'
+                            : 'bg-red-50/50 border-red-500 text-zinc-800 scale-[1.02]'
+                          : theme === 'dark'
+                            ? 'bg-zinc-950/40 border-zinc-900 border-l-red-500 hover:border-zinc-800 hover:border-l-red-500'
+                            : 'bg-white border-zinc-200 border-l-red-500 hover:border-zinc-300 hover:border-l-red-500'
+                      }`}
+                      style={{
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)',
+                        boxShadow: isSelected ? '0 0 15px rgba(239, 68, 68, 0.4)' : undefined
+                      }}
+                    >
+                      <div className="flex justify-between items-start">
+                        <span className={`text-sm font-semibold ${theme === 'dark' ? 'text-zinc-100' : 'text-zinc-900'}`}>
+                          {item.type}
+                        </span>
+                        <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${
+                          theme === 'dark' ? 'bg-zinc-900 text-zinc-400' : 'bg-zinc-100 text-zinc-600'
+                        }`}>
+                          {item.time_of_day}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center mt-3 text-xs text-zinc-500 font-medium">
+                        <span>{formatDistance(item.distance)} away</span>
+                        <span>·</span>
+                        <span>{getRelativeTime(item.created_at)}</span>
+                      </div>
+                    </div>
+                  )
+
             })}
 
 

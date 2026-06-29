@@ -57,7 +57,7 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, se
         const echData = await echoRes.json()
         setMemories(Array.isArray(memData) ? memData : [])
 
-        setEchoData(echData)
+        setEchoData(echData && echData.id ? echData : null)
       } catch (error) {
         console.error('[v0] Error fetching memory data:', error)
       } finally {
@@ -126,7 +126,8 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, se
         `/api/echo?lat=${targetLocation[0]}&lng=${targetLocation[1]}`
       )
       const data = await res.json()
-      setEchoData(data)
+      setEchoData(data && data.id ? data : null)
+
       onRefreshMapData?.()
     } catch (error) {
       console.error('[v0] Error submitting echo:', error)
@@ -146,9 +147,14 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, se
   }
 
   const isEchoUnlocked = (echo: Echo) => {
-    const dist = getDistance(echo.lat, echo.lng)
-    return dist <= 50 // Unlocks when within 50m
+    return !!(echo as any).unlocked
   }
+
+  const formatDistance = (meters: number) => {
+    if (meters >= 1000) return `~${(meters / 1000).toFixed(1)} km`
+    return `~${Math.round(meters)}m`
+  }
+
 
   if (loading) {
     return (
@@ -172,7 +178,8 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, se
         <h3 className={`text-xs font-bold uppercase tracking-wide ${theme === 'dark' ? 'text-zinc-400' : 'text-zinc-600'}`}>
           Physical Echoes (Hidden Messages)
         </h3>
-        {echoData ? (
+        {echoData && (echoData as any).id ? (
+
           (() => {
             const unlocked = isEchoUnlocked(echoData)
             const dist = getDistance(echoData.lat, echoData.lng)
@@ -212,9 +219,10 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, se
                     <div className="text-3xl filter grayscale select-none">🔒</div>
                     <div className="text-sm font-semibold text-zinc-400">Locked Echo Presence-Gated</div>
                     <p className="text-xs text-zinc-500 max-w-xs mx-auto">
-                      A voice was whispered here. Get within <strong>50m</strong> to unlock. (Currently ~{Math.round(dist)}m away)
+                      A voice was whispered here. Get within <strong>50m</strong> to unlock. (Currently {formatDistance(dist)} away)
                     </p>
                   </div>
+
                 )}
               </div>
             )

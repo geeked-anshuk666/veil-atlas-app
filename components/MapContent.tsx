@@ -80,27 +80,58 @@ function clusterPins<T extends { id: string; lat: number; lng: number }>(
 }
 
 function createHolographicIcon(count: number, color: string) {
-  const height = Math.min(120, 25 + count * 12)
-  // No HTML comments inside – they can break Leaflet's innerHTML parser in some browsers
+  const height = Math.min(130, 45 + count * 8)
+  const wBase = 18
+  const wTower = 11
+  const yBottom = 150
+  const yBaseTop = 150 - height * 0.42
+  const yRoof = 150 - height
+  const yAntenna = yRoof - 22
+
   const svgHtml = [
-    `<svg width="60" height="150" viewBox="0 0 60 150" style="overflow:visible;filter:drop-shadow(0 0 6px ${color}90)">`,
-    `<defs><linearGradient id="cg${count}" x1="0" y1="1" x2="0" y2="0">`,
+    `<svg width="60" height="160" viewBox="0 0 60 160" style="overflow:visible;filter:drop-shadow(0 0 8px ${color}80)">`,
+    `<defs>`,
+    `<linearGradient id="cg${count}" x1="0" y1="1" x2="0" y2="0">`,
     `<stop offset="0%" stop-color="${color}" stop-opacity="0.05"/>`,
-    `<stop offset="100%" stop-color="${color}" stop-opacity="0.8"/>`,
-    `</linearGradient></defs>`,
-    `<path d="M 15,${150 - height} L 30,${158 - height} L 30,150 L 15,142 Z" fill="url(#cg${count})" stroke="${color}" stroke-width="1.2"/>`,
-    `<path d="M 30,${158 - height} L 45,${150 - height} L 45,142 L 30,150 Z" fill="url(#cg${count})" stroke="${color}" stroke-dasharray="2,2" stroke-width="0.8"/>`,
-    `<path d="M 15,${150 - height} L 30,${142 - height} L 45,${150 - height} L 30,${158 - height} Z" fill="${color}" fill-opacity="0.95" stroke="#fff" stroke-width="1"/>`,
-    `<text x="30" y="${153 - height}" fill="#000" font-size="9" font-weight="900" text-anchor="middle">${count}</text>`,
+    `<stop offset="100%" stop-color="${color}" stop-opacity="0.75"/>`,
+    `</linearGradient>`,
+    `</defs>`,
+    
+    // Spire
+    `<line x1="30" y1="${yRoof - 3}" x2="30" y2="${yAntenna}" stroke="${color}" stroke-width="1.5" />`,
+    `<circle cx="30" cy="${yAntenna}" r="2.5" fill="#ffffff" stroke="${color}" stroke-width="1" class="neon-pulse" />`,
+    
+    // BASE TIER - Left Face
+    `<path d="M ${30 - wBase},${yBottom - 4} L ${30 - wBase},${yBaseTop} L 30,${yBaseTop + 4} L 30,${yBottom} Z" fill="url(#cg${count})" stroke="${color}" stroke-width="1"/>`,
+    // BASE TIER - Right Face
+    `<path d="M 30,${yBottom} L 30,${yBaseTop + 4} L ${30 + wBase},${yBaseTop} L ${30 + wBase},${yBottom - 4} Z" fill="url(#cg${count})" stroke="${color}" stroke-dasharray="2,2" stroke-width="0.8"/>`,
+    // BASE TIER - Roof Face
+    `<path d="M ${30 - wBase},${yBaseTop} L 30,${yBaseTop - 4} L ${30 + wBase},${yBaseTop} L 30,${yBaseTop + 4} Z" fill="${color}" fill-opacity="0.4" stroke="${color}" stroke-width="0.8"/>`,
+    
+    // UPPER TIER - Left Face
+    `<path d="M ${30 - wTower},${yBaseTop} L ${30 - wTower},${yRoof} L 30,${yRoof + 3} L 30,${yBaseTop + 3} Z" fill="url(#cg${count})" stroke="${color}" stroke-width="1.2"/>`,
+    // UPPER TIER - Right Face
+    `<path d="M 30,${yBaseTop + 3} L 30,${yRoof + 3} L ${30 + wTower},${yRoof} L ${30 + wTower},${yBaseTop} Z" fill="url(#cg${count})" stroke="${color}" stroke-dasharray="1.5,1.5" stroke-width="0.8"/>`,
+    // UPPER TIER - Roof Face
+    `<path d="M ${30 - wTower},${yRoof} L 30,${yRoof - 3} L ${30 + wTower},${yRoof} L 30,${yRoof + 3} Z" fill="${color}" fill-opacity="0.95" stroke="#ffffff" stroke-width="1"/>`,
+    
+    // Cyber Grid Windows (Dotted grid pattern)
+    `<line x1="${30 - wTower/2}" y1="${yBaseTop - 2}" x2="${30 - wTower/2}" y2="${yRoof + 2}" stroke="${color}" stroke-dasharray="2,3" stroke-width="1.2" opacity="0.6"/>`,
+    `<line x1="${30 + wTower/2}" y1="${yBaseTop - 2}" x2="${30 + wTower/2}" y2="${yRoof + 2}" stroke="${color}" stroke-dasharray="2,3" stroke-width="1.2" opacity="0.6"/>`,
+
+    // Count text
+    `<text x="30" y="${yRoof + 1}" fill="#000000" font-size="8" font-weight="900" text-anchor="middle">${count}</text>`,
     `</svg>`,
   ].join('')
+
   return divIcon({
     html: svgHtml,
     className: 'holographic-3d-building',
-    iconSize: [60, 150],
+    iconSize: [60, 160],
     iconAnchor: [30, 150],
   })
 }
+
 
 
 
@@ -193,7 +224,8 @@ export default function MapContent({
 
         {/* Now layer - blue pulsing dots or 3D towers */}
         {activeLayer === 'now' &&
-          clusterPins(nowPosts).map((cluster, cIdx) => {
+          clusterPins(nowPosts, 35).map((cluster, cIdx) => {
+
             const count = cluster.pins.length
             if (count > 1) {
               const mainPost = cluster.pins[0]
@@ -272,7 +304,8 @@ export default function MapContent({
             ...(feelMoods || []).map(m => ({ ...m, type: 'mood' as const }))
           ];
           
-          return clusterPins(unifiedPins).map((cluster, cIdx) => {
+          return clusterPins(unifiedPins, 35).map((cluster, cIdx) => {
+
             const count = cluster.pins.length;
             if (count > 1) {
               const mainPin = cluster.pins[0];
@@ -368,7 +401,8 @@ export default function MapContent({
         {/* Truth layer - red incident markers */}
         {activeLayer === 'truth' &&
           truthIncidents &&
-          clusterPins(truthIncidents).map((cluster, cIdx) => {
+          clusterPins(truthIncidents, 35).map((cluster, cIdx) => {
+
             const count = cluster.pins.length
             if (count > 1) {
               const mainPin = cluster.pins[0]
@@ -429,7 +463,8 @@ export default function MapContent({
 
         {/* Memory layer - purple markers at memory coordinates */}
         {activeLayer === 'memory' &&
-          clusterPins(memories).map((cluster, cIdx) => {
+          clusterPins(memories, 35).map((cluster, cIdx) => {
+
             const count = cluster.pins.length
             if (count > 1) {
               const mainPin = cluster.pins[0]
@@ -537,7 +572,7 @@ export default function MapContent({
           animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
         .holographic-3d-building {
-          animation: floatBuilding 3s ease-in-out infinite alternate;
+          animation: floatBuilding 3.5s ease-in-out infinite alternate;
           background: none !important;
           border: none !important;
         }
@@ -546,10 +581,18 @@ export default function MapContent({
             transform: translateY(0);
           }
           100% {
-            transform: translateY(-5px);
+            transform: translateY(-4px);
           }
         }
+        @keyframes neonPulse {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 1; }
+        }
+        .neon-pulse {
+          animation: neonPulse 1.2s ease-in-out infinite;
+        }
       `}</style>
+
     </div>
   )
 }

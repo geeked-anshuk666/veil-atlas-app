@@ -33,7 +33,38 @@ export async function GET(request: NextRequest) {
     .sort((a, b) => b.created_at - a.created_at)
     .slice(0, 20)
 
+  if (nearby.length === 0) {
+    const mockPosts = [
+      {
+        id: 'mock-1',
+        content: 'Is anyone studying at the local cafe? Looking for a study buddy. ☕',
+        lat: lat + 0.001,
+        lng: lng - 0.001,
+        created_at: Date.now() - 3 * 60 * 1000,
+        user_hash: 'usr_f8d2',
+      },
+      {
+        id: 'mock-2',
+        content: 'Beautiful afternoon for a walk around here! The breeze is perfect. 🍃',
+        lat: lat - 0.0012,
+        lng: lng + 0.0006,
+        created_at: Date.now() - 14 * 60 * 1000,
+        user_hash: 'usr_2a9c',
+      },
+      {
+        id: 'mock-3',
+        content: 'Lost a blue water bottle near the central plaza. Let me know if you spot it!',
+        lat: lat + 0.0004,
+        lng: lng + 0.0011,
+        created_at: Date.now() - 25 * 60 * 1000,
+        user_hash: 'usr_7b6e',
+      }
+    ]
+    return NextResponse.json(mockPosts)
+  }
+
   return NextResponse.json(nearby)
+
 }
 
 export async function POST(request: NextRequest) {

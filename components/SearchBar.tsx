@@ -122,27 +122,30 @@ export default function SearchBar({ onLocationSelect, onDropdownOpen }: SearchBa
   return (
     <div
       ref={searchRef}
-      className="fixed top-3 z-40"
+      className="fixed top-4 z-40 transition-all duration-300"
       style={{
+        left: '72px',
         right: '16px',
-        maxWidth: '340px',
+        maxWidth: '420px',
       }}
     >
       {/* Search Input */}
       <div
-        className={`rounded-full px-3 py-2 border transition-all duration-300 flex items-center gap-2 ${
+        className={`rounded-2xl px-4 py-3 border transition-all duration-300 flex items-center gap-3 ${
           theme === 'dark'
-            ? 'bg-black/60 border-white/10 hover:border-white/20 focus-within:border-white/25'
-            : 'bg-white/70 border-black/10 hover:border-black/20 focus-within:border-black/25'
-        }`}
+            ? 'bg-zinc-950/40 border-white/10 hover:border-white/20 focus-within:border-white/30 focus-within:bg-zinc-950/60'
+            : 'bg-white/45 border-black/5 hover:border-black/15 focus-within:border-black/20 focus-within:bg-white/65'
+        } shadow-xl shadow-black/20`}
         style={{
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
         }}
       >
         {/* SVG Search Icon */}
         <svg
-          className={`w-3.5 h-3.5 flex-shrink-0 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}
+          className={`w-4 h-4 flex-shrink-0 transition-colors ${
+            theme === 'dark' ? 'text-zinc-500 focus-within:text-white' : 'text-zinc-400 focus-within:text-zinc-900'
+          }`}
           fill="none" stroke="currentColor" viewBox="0 0 24 24"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
@@ -154,10 +157,10 @@ export default function SearchBar({ onLocationSelect, onDropdownOpen }: SearchBa
           value={query}
           onChange={handleInputChange}
           placeholder="Search locations..."
-          className={`flex-1 bg-transparent outline-none text-xs font-medium ${
+          className={`flex-1 bg-transparent outline-none text-sm font-semibold tracking-wide ${
             theme === 'dark'
-              ? 'text-white placeholder-gray-600'
-              : 'text-black placeholder-gray-400'
+              ? 'text-white placeholder-zinc-600'
+              : 'text-zinc-900 placeholder-zinc-400'
           }`}
         />
 
@@ -165,8 +168,8 @@ export default function SearchBar({ onLocationSelect, onDropdownOpen }: SearchBa
         {query && (
           <button
             onClick={handleClear}
-            className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] transition-opacity hover:opacity-70 flex-shrink-0 ${
-              theme === 'dark' ? 'bg-white/20 text-white' : 'bg-black/15 text-black'
+            className={`w-5 h-5 rounded-full flex items-center justify-center text-xs transition-opacity hover:opacity-75 flex-shrink-0 ${
+              theme === 'dark' ? 'bg-white/15 text-white' : 'bg-black/10 text-zinc-900'
             }`}
             aria-label="Clear search"
           >
@@ -176,8 +179,8 @@ export default function SearchBar({ onLocationSelect, onDropdownOpen }: SearchBa
 
         {/* Loading Indicator */}
         {isLoading && (
-          <div className={`w-3 h-3 border border-t-transparent rounded-full animate-spin flex-shrink-0 ${
-            theme === 'dark' ? 'border-gray-400' : 'border-gray-500'
+          <div className={`w-4 h-4 border-2 border-t-transparent rounded-full animate-spin flex-shrink-0 ${
+            theme === 'dark' ? 'border-zinc-400' : 'border-zinc-500'
           }`} />
         )}
       </div>
@@ -185,14 +188,14 @@ export default function SearchBar({ onLocationSelect, onDropdownOpen }: SearchBa
       {/* Results Dropdown */}
       {isOpen && results.length > 0 && (
         <div
-          className={`absolute top-full mt-2 left-0 right-0 rounded-2xl border max-h-80 overflow-y-auto z-50 ${
+          className={`absolute top-full mt-2 left-0 right-0 rounded-2xl border max-h-80 overflow-y-auto z-50 shadow-2xl ${
             theme === 'dark'
-              ? 'bg-black/85 border-white/10'
-              : 'bg-white/90 border-black/10'
+              ? 'bg-zinc-950/80 border-white/10'
+              : 'bg-white/85 border-zinc-200'
           }`}
           style={{
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
           }}
         >
           {results.map((result, idx) => (

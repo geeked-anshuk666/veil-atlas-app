@@ -3,7 +3,7 @@
 import { MapContainer, TileLayer, CircleMarker, Popup, useMapEvent, useMap, Tooltip, Marker } from 'react-leaflet'
 import { LatLng, divIcon } from 'leaflet'
 import { useTheme } from '@/lib/theme-context'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import 'leaflet/dist/leaflet.css'
 
 
@@ -164,11 +164,13 @@ function FlyToLocation({ selectedLocation }: { selectedLocation: [number, number
     // Map click event - this ensures map events are active
   })
 
-  if (selectedLocation && map) {
-    map.flyTo(new LatLng(selectedLocation[0], selectedLocation[1]), 16, {
-      duration: 1.2,
-    })
-  }
+  useEffect(() => {
+    if (selectedLocation && map) {
+      map.flyTo(new LatLng(selectedLocation[0], selectedLocation[1]), 16, {
+        duration: 1.2,
+      })
+    }
+  }, [selectedLocation, map])
   
   return null
 }

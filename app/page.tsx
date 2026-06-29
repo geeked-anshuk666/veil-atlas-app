@@ -40,9 +40,11 @@ export default function HomePage() {
   // Use refs so callbacks always have latest values without stale closures
   const userLocationRef = useRef<[number, number] | null>(null)
   const selectedLocationRef = useRef<[number, number] | null>(null)
+  const watchIdRef = useRef<number | null>(null)
 
   useEffect(() => { userLocationRef.current = userLocation }, [userLocation])
   useEffect(() => { selectedLocationRef.current = selectedLocation }, [selectedLocation])
+
 
   // --- INIT ---
   useEffect(() => {
@@ -58,22 +60,30 @@ export default function HomePage() {
     const onboarded = localStorage.getItem('veil_onboarded')
     if (onboarded !== 'true') setShowOnboarding(true)
 
-    // Get geolocation with active real-time tracking
-    let watchId: number | undefined
+    // Get geolocation with active real-time tracking, but safely request once first
     if (navigator.geolocation) {
-      watchId = navigator.geolocation.watchPosition(
+      navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude, accuracy } = position.coords
           setUserLocation([latitude, longitude])
           setGpsAccuracy(accuracy)
           setHasLocationPermission(true)
           setIsGeolocating(false)
+
+          // Only watch if the user successfully permitted location
+          watchIdRef.current = navigator.geolocation.watchPosition(
+            (pos) => {
+              setUserLocation([pos.coords.latitude, pos.coords.longitude])
+              setGpsAccuracy(pos.coords.accuracy)
+            },
+            () => {},
+            { enableHighAccuracy: true }
+          )
         },
         () => {
           setHasLocationPermission(false)
           setIsGeolocating(false)
-        },
-        { enableHighAccuracy: true }
+        }
       )
     } else {
       setHasLocationPermission(false)
@@ -81,11 +91,12 @@ export default function HomePage() {
     }
 
     return () => {
-      if (watchId !== undefined) {
-        navigator.geolocation.clearWatch(watchId)
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current)
       }
     }
   }, [])
+
 
   // --- FETCH HELPERS — always read from refs for current values ---
 
@@ -199,6 +210,19 @@ export default function HomePage() {
           setGpsAccuracy(accuracy)
           setHasLocationPermission(true)
           setIsGeolocating(false)
+
+          // Start watching
+          if (watchIdRef.current !== null) {
+            navigator.geolocation.clearWatch(watchIdRef.current)
+          }
+          watchIdRef.current = navigator.geolocation.watchPosition(
+            (pos) => {
+              setUserLocation([pos.coords.latitude, pos.coords.longitude])
+              setGpsAccuracy(pos.coords.accuracy)
+            },
+            () => {},
+            { enableHighAccuracy: true }
+          )
         },
         () => setIsGeolocating(false)
       )
@@ -206,11 +230,16 @@ export default function HomePage() {
   }
 
   const handleExploreWithoutLocation = () => {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current)
+      watchIdRef.current = null
+    }
     setUserLocation([40.7128, -74.006])
     setGpsAccuracy(1000)
     setHasLocationPermission(true)
     setIsGeolocating(false)
   }
+
 
   const handleSearchLocationSelect = (lat: number, lng: number, _name: string) => {
     setSelectedLocation([lat, lng])

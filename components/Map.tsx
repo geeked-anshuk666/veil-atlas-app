@@ -2,6 +2,8 @@
 
 import { useEffect, useState, lazy, Suspense } from 'react'
 import 'leaflet/dist/leaflet.css'
+import MapErrorBoundary from './MapErrorBoundary'
+
 
 interface MapProps {
   activeLayer: 'now' | 'feel' | 'truth' | 'memory' | 'rhythm'
@@ -46,25 +48,27 @@ export default function Map({
   }
 
   return (
-    <Suspense
-      fallback={
-        <div className="absolute inset-0 bg-[#1a1a1a] flex items-center justify-center text-gray-500">
-          <div className="text-sm animate-pulse">Loading map...</div>
-        </div>
-      }
-    >
-      <MapContent
-        activeLayer={activeLayer}
-        userLocation={userLocation}
-        selectedLocation={selectedLocation}
-        nowPosts={nowPosts}
-        memories={memories}
-        feelConfessions={feelConfessions}
-        truthIncidents={truthIncidents}
-        feelMoods={feelMoods}
-        onMapClick={onMapClick}
-      />
-    </Suspense>
+    <MapErrorBoundary>
+      <Suspense
+        fallback={
+          <div className="absolute inset-0 bg-[#1a1a1a] flex items-center justify-center text-gray-500">
+            <div className="text-sm animate-pulse">Loading map...</div>
+          </div>
+        }
+      >
+        <MapContent
+          activeLayer={activeLayer}
+          userLocation={userLocation}
+          selectedLocation={selectedLocation}
+          nowPosts={nowPosts}
+          memories={memories}
+          feelConfessions={feelConfessions}
+          truthIncidents={truthIncidents}
+          feelMoods={feelMoods}
+          onMapClick={onMapClick}
+        />
+      </Suspense>
+    </MapErrorBoundary>
   )
 }
 

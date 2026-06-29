@@ -30,9 +30,10 @@ const CARTODB_ATTRIBUTION = '© OpenStreetMap contributors © CARTO'
  * Max spread: ~8 metres (0.00008 degrees).
  */
 function jitterCoord(id: string, lat: number, lng: number): [number, number] {
-  // Derive two pseudo-random numbers from the first 8 chars of the UUID
-  const seed1 = parseInt(id.replace(/-/g, '').slice(0, 4), 16) / 0xffff
-  const seed2 = parseInt(id.replace(/-/g, '').slice(4, 8), 16) / 0xffff
+  // Guard: only use hex chars for seed, fall back to 0 if id is non-hex (e.g. 'mock-1')
+  const clean = id.replace(/-/g, '').replace(/[^0-9a-fA-F]/g, '0').padEnd(8, '0')
+  const seed1 = parseInt(clean.slice(0, 4), 16) / 0xffff
+  const seed2 = parseInt(clean.slice(4, 8), 16) / 0xffff
   const angle = seed1 * 2 * Math.PI
   const radius = seed2 * 0.00008 // ~8m max
   return [lat + Math.sin(angle) * radius, lng + Math.cos(angle) * radius]
@@ -80,24 +81,19 @@ function clusterPins<T extends { id: string; lat: number; lng: number }>(
 
 function createHolographicIcon(count: number, color: string) {
   const height = Math.min(120, 25 + count * 12)
-  const svgHtml = `
-    <svg width="60" height="150" viewBox="0 0 60 150" style="overflow: visible; filter: drop-shadow(0 0 6px ${color}90);">
-      <defs>
-        <linearGradient id="col-grad-${count}" x1="0" y1="1" x2="0" y2="0">
-          <stop offset="0%" stop-color="${color}" stop-opacity="0.05" />
-          <stop offset="100%" stop-color="${color}" stop-opacity="0.8" />
-        </linearGradient>
-      </defs>
-      <!-- Left side face -->
-      <path d="M 15,${150 - height} L 30,${158 - height} L 30,150 L 15,142 Z" fill="url(#col-grad-${count})" stroke="${color}" stroke-width="1.2" />
-      <!-- Right side face -->
-      <path d="M 30,${158 - height} L 45,${150 - height} L 45,142 L 30,150 Z" fill="url(#col-grad-${count})" stroke="${color}" stroke-dasharray="2,2" stroke-width="0.8" />
-      <!-- Roof face -->
-      <path d="M 15,${150 - height} L 30,${142 - height} L 45,${150 - height} L 30,${158 - height} Z" fill="${color}" fill-opacity="0.95" stroke="#ffffff" stroke-width="1" />
-      <!-- Tag / Count -->
-      <text x="30" y="${153 - height}" fill="#000000" font-size="9" font-weight="900" text-anchor="middle">${count}</text>
-    </svg>
-  `
+  // No HTML comments inside – they can break Leaflet's innerHTML parser in some browsers
+  const svgHtml = [
+    `<svg width="60" height="150" viewBox="0 0 60 150" style="overflow:visible;filter:drop-shadow(0 0 6px ${color}90)">`,
+    `<defs><linearGradient id="cg${count}" x1="0" y1="1" x2="0" y2="0">`,
+    `<stop offset="0%" stop-color="${color}" stop-opacity="0.05"/>`,
+    `<stop offset="100%" stop-color="${color}" stop-opacity="0.8"/>`,
+    `</linearGradient></defs>`,
+    `<path d="M 15,${150 - height} L 30,${158 - height} L 30,150 L 15,142 Z" fill="url(#cg${count})" stroke="${color}" stroke-width="1.2"/>`,
+    `<path d="M 30,${158 - height} L 45,${150 - height} L 45,142 L 30,150 Z" fill="url(#cg${count})" stroke="${color}" stroke-dasharray="2,2" stroke-width="0.8"/>`,
+    `<path d="M 15,${150 - height} L 30,${142 - height} L 45,${150 - height} L 30,${158 - height} Z" fill="${color}" fill-opacity="0.95" stroke="#fff" stroke-width="1"/>`,
+    `<text x="30" y="${153 - height}" fill="#000" font-size="9" font-weight="900" text-anchor="middle">${count}</text>`,
+    `</svg>`,
+  ].join('')
   return divIcon({
     html: svgHtml,
     className: 'holographic-3d-building',
@@ -107,10 +103,10 @@ function createHolographicIcon(count: number, color: string) {
 }
 
 
+
 // Helper component to capture map clicks
-function MapClickHandler({ onMapClick, activeLayer }: { onMapClick?: (lat: number, lng: number) => void; activeLayer: string }) {
+function MapClickHandler({ onMapClick }: { onMapClick?: (lat: number, lng: number) => void; activeLayer: string }) {
   useMapEvent('click', (e) => {
-    if (activeLayer === 'now') return // Now layer doesn't allow clicks
     const target = e.originalEvent.target as HTMLElement
     if (target && (target.classList.contains('leaflet-interactive') || target.closest('.leaflet-interactive'))) {
       return // Ignore map click if clicking a marker

@@ -152,10 +152,12 @@ export default function MapContent({
               weight={2}
               className="pulse-marker"
               eventHandlers={{
-                click: () => {
+                click: (e) => {
+                  e.originalEvent.stopPropagation()
                   onMapClick?.(c.lat, c.lng, c.id)
                 },
               }}
+
 
             >
               <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
@@ -179,10 +181,12 @@ export default function MapContent({
               weight={2}
               className="pulse-marker"
               eventHandlers={{
-                click: () => {
+                click: (e) => {
+                  e.originalEvent.stopPropagation()
                   onMapClick?.(m.lat, m.lng, m.id)
                 },
               }}
+
 
             >
               <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
@@ -206,10 +210,12 @@ export default function MapContent({
               weight={2}
               className="pulse-marker"
               eventHandlers={{
-                click: () => {
+                click: (e) => {
+                  e.originalEvent.stopPropagation()
                   onMapClick?.(incident.lat, incident.lng, incident.id)
                 },
               }}
+
 
             >
               <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
@@ -231,10 +237,12 @@ export default function MapContent({
               fillColor="#a855f7"
               weight={2}
               eventHandlers={{
-                click: () => {
+                click: (e) => {
+                  e.originalEvent.stopPropagation()
                   onMapClick?.(memory.lat, memory.lng, memory.id)
                 },
               }}
+
 
             >
               <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>

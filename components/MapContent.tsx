@@ -212,8 +212,29 @@ export default function MapContent({
   const [lat, lng] = userLocation
   const [zoom, setZoom] = useState(16)
 
-  // Dynamic ground radius: 35m at zoom 16, doubles for each level zoomed out
-  const dynamicRadius = Math.max(35, 35 * Math.pow(2, Math.max(0, 16 - zoom)))
+  // Dynamic ground radius based on zoom:
+  // Zoom 16+: 35m
+  // Zoom 15: 150m
+  // Zoom 14: 600m
+  // Zoom 13: 2000m (2 Km)
+  // Zoom 12: 5000m (5 Km)
+  // Zoom 11: 12000m (12 Km)
+  // Zoom 10: 25000m (25 Km)
+  // Zoom 9: 42000m (42 Km)
+  // Zoom 8 or lower: 60000m (60 Km)
+  const getClusteringRadius = (z: number) => {
+    if (z >= 17) return 15
+    if (z === 16) return 35
+    if (z === 15) return 150
+    if (z === 14) return 600
+    if (z === 13) return 2000
+    if (z === 12) return 5000
+    if (z === 11) return 12000
+    if (z === 10) return 25000
+    if (z === 9) return 42000
+    return 60000
+  }
+  const dynamicRadius = getClusteringRadius(zoom)
 
   return (
     <div className="absolute inset-0 z-0">
@@ -253,7 +274,6 @@ export default function MapContent({
                   eventHandlers={{
                     click: (e) => {
                       e.originalEvent.stopPropagation()
-                      onMapClick?.(cluster.center[0], cluster.center[1], mainPost.id)
                     },
                   }}
                 >
@@ -261,10 +281,18 @@ export default function MapContent({
                     <span>⚡ Clustered Signals: {count} signals active here</span>
                   </Tooltip>
                   <Popup>
-                    <div className="space-y-1.5 max-h-32 overflow-y-auto">
-                      <strong>{count} signals:</strong>
+                    <div className="space-y-2 max-h-48 overflow-y-auto min-w-[220px]">
+                      <div className="flex items-center justify-between border-b border-zinc-800/10 pb-1.5 mb-1.5">
+                        <strong className="text-xs font-bold text-zinc-900 dark:text-white">{count} signals active</strong>
+                        <button
+                          onClick={() => onMapClick?.(cluster.center[0], cluster.center[1], mainPost.id)}
+                          className="text-[10px] bg-blue-500 hover:bg-blue-600 text-white font-bold px-2 py-0.5 rounded-md transition-all active:scale-95"
+                        >
+                          Zoom In
+                        </button>
+                      </div>
                       {cluster.pins.map((p) => (
-                        <p key={p.id} className="text-xs border-b pb-1 last:border-0">• {p.content.slice(0, 50)}...</p>
+                        <p key={p.id} className="text-xs text-zinc-600 dark:text-zinc-400 border-b border-zinc-800/5 pb-1 last:border-0">• {p.content.slice(0, 50)}...</p>
                       ))}
                     </div>
                   </Popup>
@@ -333,7 +361,6 @@ export default function MapContent({
                   eventHandlers={{
                     click: (e) => {
                       e.originalEvent.stopPropagation();
-                      onMapClick?.(cluster.center[0], cluster.center[1], mainPin.id);
                     },
                   }}
                 >
@@ -341,10 +368,18 @@ export default function MapContent({
                     <span>🌡 Clustered Feelings: {count} signals here</span>
                   </Tooltip>
                   <Popup>
-                    <div className="space-y-1.5 max-h-32 overflow-y-auto">
-                      <strong>{count} items logged here:</strong>
+                    <div className="space-y-2 max-h-48 overflow-y-auto min-w-[220px]">
+                      <div className="flex items-center justify-between border-b border-zinc-800/10 pb-1.5 mb-1.5">
+                        <strong className="text-xs font-bold text-zinc-900 dark:text-white">{count} items logged</strong>
+                        <button
+                          onClick={() => onMapClick?.(cluster.center[0], cluster.center[1], mainPin.id)}
+                          className="text-[10px] bg-amber-500 hover:bg-amber-600 text-white font-bold px-2 py-0.5 rounded-md transition-all active:scale-95"
+                        >
+                          Zoom In
+                        </button>
+                      </div>
                       {cluster.pins.map((p) => (
-                        <div key={p.id} className="text-xs border-b pb-1 last:border-0">
+                        <div key={p.id} className="text-xs text-zinc-600 dark:text-zinc-400 border-b border-zinc-800/5 pb-1 last:border-0">
                           {p.type === 'confession' ? (
                             <span>• 🌡 Confession: &ldquo;{p.content?.slice(0, 40)}...&rdquo;</span>
                           ) : (
@@ -430,7 +465,6 @@ export default function MapContent({
                   eventHandlers={{
                     click: (e) => {
                       e.originalEvent.stopPropagation()
-                      onMapClick?.(cluster.center[0], cluster.center[1], mainPin.id)
                     },
                   }}
                 >
@@ -438,10 +472,18 @@ export default function MapContent({
                     <span>👁 Clustered Incidents: {count} reports here</span>
                   </Tooltip>
                   <Popup>
-                    <div className="space-y-1.5 max-h-32 overflow-y-auto">
-                      <strong>{count} incidents:</strong>
+                    <div className="space-y-2 max-h-48 overflow-y-auto min-w-[220px]">
+                      <div className="flex items-center justify-between border-b border-zinc-800/10 pb-1.5 mb-1.5">
+                        <strong className="text-xs font-bold text-zinc-900 dark:text-white">{count} reports</strong>
+                        <button
+                          onClick={() => onMapClick?.(cluster.center[0], cluster.center[1], mainPin.id)}
+                          className="text-[10px] bg-red-500 hover:bg-red-600 text-white font-bold px-2 py-0.5 rounded-md transition-all active:scale-95"
+                        >
+                          Zoom In
+                        </button>
+                      </div>
                       {cluster.pins.map((p) => (
-                        <p key={p.id} className="text-xs border-b pb-1 last:border-0">• {p.type} ({p.time_of_day})</p>
+                        <p key={p.id} className="text-xs text-zinc-600 dark:text-zinc-400 border-b border-zinc-800/5 pb-1 last:border-0">• {p.type} ({p.time_of_day})</p>
                       ))}
                     </div>
                   </Popup>
@@ -492,7 +534,6 @@ export default function MapContent({
                   eventHandlers={{
                     click: (e) => {
                       e.originalEvent.stopPropagation()
-                      onMapClick?.(cluster.center[0], cluster.center[1], mainPin.id)
                     },
                   }}
                 >
@@ -500,10 +541,18 @@ export default function MapContent({
                     <span>🕰 Clustered Memories: {count} logged here</span>
                   </Tooltip>
                   <Popup>
-                    <div className="space-y-1.5 max-h-32 overflow-y-auto">
-                      <strong>{count} memories:</strong>
+                    <div className="space-y-2 max-h-48 overflow-y-auto min-w-[220px]">
+                      <div className="flex items-center justify-between border-b border-zinc-800/10 pb-1.5 mb-1.5">
+                        <strong className="text-xs font-bold text-zinc-900 dark:text-white">{count} memories</strong>
+                        <button
+                          onClick={() => onMapClick?.(cluster.center[0], cluster.center[1], mainPin.id)}
+                          className="text-[10px] bg-purple-500 hover:bg-purple-600 text-white font-bold px-2 py-0.5 rounded-md transition-all active:scale-95"
+                        >
+                          Zoom In
+                        </button>
+                      </div>
                       {cluster.pins.map((p) => (
-                        <p key={p.id} className="text-xs border-b pb-1 last:border-0">• {p.year_label}: {p.content.slice(0, 50)}...</p>
+                        <p key={p.id} className="text-xs text-zinc-600 dark:text-zinc-400 border-b border-zinc-800/5 pb-1 last:border-0">• {p.year_label}: {p.content.slice(0, 50)}...</p>
                       ))}
                     </div>
                   </Popup>

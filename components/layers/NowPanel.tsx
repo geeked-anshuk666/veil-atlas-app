@@ -29,6 +29,13 @@ export default function NowPanel({ userLocation, selectedLocation, userId, gpsAc
   const [loading, setLoading] = useState(true)
   const [inputValue, setInputValue] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  // Thread states
+  const [expandedPostId, setExpandedPostId] = useState<string | null>(null)
+  const [replies, setReplies] = useState<any[]>([])
+  const [repliesLoading, setRepliesLoading] = useState(false)
+  const [replyInputValue, setReplyInputValue] = useState('')
+  const [replySubmitting, setReplySubmitting] = useState(false)
   
   const hasWeakGPS = !!(gpsAccuracy && gpsAccuracy > 3000)
 
@@ -88,8 +95,55 @@ export default function NowPanel({ userLocation, selectedLocation, userId, gpsAc
     }
   }
 
+  const handleToggleReplies = async (postId: string) => {
+    if (expandedPostId === postId) {
+      setExpandedPostId(null)
+      setReplies([])
+      return
+    }
 
-  const getTimeAgo = (dateStr: string) => {
+    setExpandedPostId(postId)
+    setRepliesLoading(true)
+    setReplyInputValue('')
+    try {
+      const res = await fetch(`/api/now/replies?parent_id=${postId}`)
+      const data = await res.json()
+      setReplies(Array.isArray(data) ? data : [])
+    } catch (e) {
+      console.error('Failed to fetch replies:', e)
+    } finally {
+      setRepliesLoading(false)
+    }
+  }
+
+  const handleSendReply = async (postId: string) => {
+    if (!replyInputValue.trim()) return
+
+    setReplySubmitting(true)
+    try {
+      await fetch('/api/now/replies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          parent_id: postId,
+          content: replyInputValue,
+          user_id: userId,
+        }),
+      })
+      setReplyInputValue('')
+      // Re-fetch replies
+      const res = await fetch(`/api/now/replies?parent_id=${postId}`)
+      const data = await res.json()
+      setReplies(Array.isArray(data) ? data : [])
+    } catch (e) {
+      console.error('Failed to send reply:', e)
+    } finally {
+      setReplySubmitting(false)
+    }
+  }
+
+
+  const getTimeAgo = (dateStr: string | number) => {
     const date = new Date(dateStr)
     const now = new Date()
     const diff = now.getTime() - date.getTime()
@@ -100,7 +154,7 @@ export default function NowPanel({ userLocation, selectedLocation, userId, gpsAc
     return `${hours}h ago`
   }
 
-  const getProgressPercentage = (createdAt: string) => {
+  const getProgressPercentage = (createdAt: string | number) => {
     const created = new Date(createdAt).getTime()
     const now = new Date().getTime()
     const thirtyMinutes = 30 * 60 * 1000
@@ -130,7 +184,7 @@ export default function NowPanel({ userLocation, selectedLocation, userId, gpsAc
       </div>
 
       {/* Posts feed */}
-      <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+      <div className="space-y-3 max-h-[28rem] overflow-y-auto pr-2">
         {loading && !posts.length ? (
           Array.from({ length: 3 }).map((_, i) => (
             <div
@@ -181,7 +235,68 @@ export default function NowPanel({ userLocation, selectedLocation, userId, gpsAc
               </p>
               <div className="flex justify-between items-center text-xs text-zinc-500 font-medium pt-1">
                 <span>~{getDistance(post.lat, post.lng)} away</span>
+                <button
+                  onClick={() => handleToggleReplies(post.id)}
+                  className={`text-[10px] uppercase font-bold tracking-wider hover:underline transition-all ${
+                    theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                  }`}
+                >
+                  💬 {expandedPostId === post.id ? 'Close Discussion' : 'Discuss'}
+                </button>
               </div>
+
+              {/* Nested replies section */}
+              {expandedPostId === post.id && (
+                <div className={`pl-4 mt-3 pt-3 border-t space-y-3 ${
+                  theme === 'dark' ? 'border-zinc-900' : 'border-zinc-100'
+                }`}>
+                  {repliesLoading ? (
+                    <div className="text-xs text-zinc-500 animate-pulse">Retrieving local signals...</div>
+                  ) : replies.length > 0 ? (
+                    <div className="space-y-2.5 max-h-40 overflow-y-auto pr-1">
+                      {replies.map((rep) => (
+                        <div key={rep.id} className="text-xs space-y-1">
+                          <div className="flex justify-between items-center text-zinc-500">
+                            <span className="font-bold text-[10px] bg-zinc-500/10 text-zinc-400 px-1.5 py-0.5 rounded">
+                              usr_{rep.user_hash}
+                            </span>
+                            <span>{getTimeAgo(rep.created_at)}</span>
+                          </div>
+                          <p className={theme === 'dark' ? 'text-zinc-200' : 'text-zinc-700'}>
+                            {rep.content}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-[10px] text-zinc-500 italic">No signals on this frequency. Drop a reply!</div>
+                  )}
+
+                  {/* Reply Input Field */}
+                  <div className="flex gap-2 pt-1">
+                    <input
+                      type="text"
+                      value={replyInputValue}
+                      onChange={(e) => setReplyInputValue(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSendReply(post.id)}
+                      placeholder="Write anonymous reply..."
+                      className={`flex-1 border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition-all duration-300 ${
+                        theme === 'dark'
+                          ? 'bg-zinc-900 border-zinc-800 text-white placeholder-zinc-500'
+                          : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400'
+                      }`}
+                    />
+                    <button
+                      onClick={() => handleSendReply(post.id)}
+                      disabled={replySubmitting || !replyInputValue.trim()}
+                      className="px-3 bg-blue-500 text-white text-xs font-bold rounded-lg hover:bg-blue-600 active:scale-95 transition-all"
+                    >
+                      {replySubmitting ? '...' : 'Reply'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <ProgressBar percentage={getProgressPercentage(post.created_at)} color="blue" />
             </div>
           ))
@@ -235,4 +350,3 @@ export default function NowPanel({ userLocation, selectedLocation, userId, gpsAc
     </div>
   )
 }
-

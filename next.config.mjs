@@ -32,8 +32,8 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // unsafe-eval needed by Next.js dev & Leaflet
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://unpkg.com",
-      "connect-src 'self' https://nominatim.openstreetmap.org https://*.amazonaws.com",
+      "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://unpkg.com",
+      "connect-src 'self' https://nominatim.openstreetmap.org https://*.amazonaws.com https://*.basemaps.cartocdn.com",
       "worker-src blob:",
       "frame-ancestors 'none'",
     ].join('; '),

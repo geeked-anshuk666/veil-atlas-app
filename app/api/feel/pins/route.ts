@@ -29,12 +29,10 @@ export async function GET(request: NextRequest) {
     })
   }
 
-  // Filter within 800m for confessions in the panel, paginated
   const pins = await sql`
     SELECT id, content, lat, lng, created_at, contributor_hash,
       haversine(${lat}, ${lng}, lat, lng) as distance_m
     FROM static_pins
-    WHERE haversine(${lat}, ${lng}, lat, lng) < 800
     ORDER BY created_at DESC
     LIMIT ${limit} OFFSET ${offset}
   `

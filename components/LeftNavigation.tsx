@@ -72,7 +72,7 @@ export default function LeftNavigation({ activeLayer, onLayerChange }: LeftNavig
               key={layer.id}
               onClick={() => handleLayerClick(layer.id)}
               title={layer.description}
-              className={`w-full flex items-center justify-center gap-3 px-2 py-3 rounded-xl transition-all duration-300 ${
+              className={`w-full flex items-center justify-start gap-3 pl-2 pr-2 py-3 rounded-xl transition-all duration-300 ${
                 activeLayer === layer.id
                   ? 'scale-105'
                   : 'scale-100 hover:scale-105'

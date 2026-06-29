@@ -140,8 +140,15 @@ function createHolographicIcon(count: number, color: string) {
 function MapClickHandler({ onMapClick }: { onMapClick?: (lat: number, lng: number) => void; activeLayer: string }) {
   useMapEvent('click', (e) => {
     const target = e.originalEvent.target as HTMLElement
-    if (target && (target.classList.contains('leaflet-interactive') || target.closest('.leaflet-interactive'))) {
-      return // Ignore map click if clicking a marker
+    if (target && (
+      target.closest('.leaflet-marker-icon') ||
+      target.closest('.leaflet-popup') ||
+      target.closest('.leaflet-control') ||
+      target.closest('.holographic-3d-building') ||
+      target.classList.contains('leaflet-interactive') ||
+      target.closest('.leaflet-interactive')
+    )) {
+      return // Ignore map click if clicking a marker or control
     }
     onMapClick?.(e.latlng.lat, e.latlng.lng)
   })

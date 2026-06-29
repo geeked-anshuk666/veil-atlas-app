@@ -1,9 +1,10 @@
 'use client'
 
-import { MapContainer, TileLayer, CircleMarker, Popup, useMapEvent, useMap, Tooltip } from 'react-leaflet'
-import { LatLng } from 'leaflet'
+import { MapContainer, TileLayer, CircleMarker, Popup, useMapEvent, useMap, Tooltip, Marker } from 'react-leaflet'
+import { LatLng, divIcon } from 'leaflet'
 import { useTheme } from '@/lib/theme-context'
 import 'leaflet/dist/leaflet.css'
+
 
 interface MapContentProps {
   activeLayer: 'now' | 'feel' | 'truth' | 'memory' | 'rhythm'
@@ -36,6 +37,75 @@ function jitterCoord(id: string, lat: number, lng: number): [number, number] {
   const radius = seed2 * 0.00008 // ~8m max
   return [lat + Math.sin(angle) * radius, lng + Math.cos(angle) * radius]
 }
+
+function distanceMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const R = 6371000
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLng = ((lng2 - lng1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
+function clusterPins<T extends { id: string; lat: number; lng: number }>(
+  pins: T[],
+  radiusMeters: number = 20
+): { center: [number, number]; pins: T[] }[] {
+  const clusters: { center: [number, number]; pins: T[] }[] = []
+  pins.forEach((pin) => {
+    let added = false
+    for (const cluster of clusters) {
+      if (distanceMeters(pin.lat, pin.lng, cluster.center[0], cluster.center[1]) <= radiusMeters) {
+        cluster.pins.push(pin)
+        const count = cluster.pins.length
+        cluster.center = [
+          cluster.pins.reduce((sum, p) => sum + p.lat, 0) / count,
+          cluster.pins.reduce((sum, p) => sum + p.lng, 0) / count,
+        ]
+        added = true
+        break
+      }
+    }
+    if (!added) {
+      clusters.push({ center: [pin.lat, pin.lng], pins: [pin] })
+    }
+  })
+  return clusters
+}
+
+function createHolographicIcon(count: number, color: string) {
+  const height = Math.min(120, 25 + count * 12)
+  const svgHtml = `
+    <svg width="60" height="150" viewBox="0 0 60 150" style="overflow: visible; filter: drop-shadow(0 0 6px ${color}90);">
+      <defs>
+        <linearGradient id="col-grad-${count}" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stop-color="${color}" stop-opacity="0.05" />
+          <stop offset="100%" stop-color="${color}" stop-opacity="0.8" />
+        </linearGradient>
+      </defs>
+      <!-- Left side face -->
+      <path d="M 15,${150 - height} L 30,${158 - height} L 30,150 L 15,142 Z" fill="url(#col-grad-${count})" stroke="${color}" stroke-width="1.2" />
+      <!-- Right side face -->
+      <path d="M 30,${158 - height} L 45,${150 - height} L 45,142 L 30,150 Z" fill="url(#col-grad-${count})" stroke="${color}" stroke-dasharray="2,2" stroke-width="0.8" />
+      <!-- Roof face -->
+      <path d="M 15,${150 - height} L 30,${142 - height} L 45,${150 - height} L 30,${158 - height} Z" fill="${color}" fill-opacity="0.95" stroke="#ffffff" stroke-width="1" />
+      <!-- Tag / Count -->
+      <text x="30" y="${153 - height}" fill="#000000" font-size="9" font-weight="900" text-anchor="middle">${count}</text>
+    </svg>
+  `
+  return divIcon({
+    html: svgHtml,
+    className: 'holographic-3d-building',
+    iconSize: [60, 150],
+    iconAnchor: [30, 150],
+  })
+}
+
 
 // Helper component to capture map clicks
 function MapClickHandler({ onMapClick, activeLayer }: { onMapClick?: (lat: number, lng: number) => void; activeLayer: string }) {
@@ -125,9 +195,40 @@ export default function MapContent({
         {/* FlyTo for selected locations */}
         <FlyToLocation selectedLocation={selectedLocation} />
 
-        {/* Now layer - blue pulsing dots */}
+        {/* Now layer - blue pulsing dots or 3D towers */}
         {activeLayer === 'now' &&
-          nowPosts.map((post) => {
+          clusterPins(nowPosts).map((cluster, cIdx) => {
+            const count = cluster.pins.length
+            if (count > 1) {
+              const mainPost = cluster.pins[0]
+              return (
+                <Marker
+                  key={`now-cluster-${cIdx}`}
+                  position={new LatLng(cluster.center[0], cluster.center[1])}
+                  icon={createHolographicIcon(count, '#3b82f6')}
+                  eventHandlers={{
+                    click: (e) => {
+                      e.originalEvent.stopPropagation()
+                      onMapClick?.(cluster.center[0], cluster.center[1], mainPost.id)
+                    },
+                  }}
+                >
+                  <Tooltip direction="top" offset={[0, -110]} opacity={0.9}>
+                    <span>⚡ Clustered Signals: {count} signals active here</span>
+                  </Tooltip>
+                  <Popup>
+                    <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                      <strong>{count} signals:</strong>
+                      {cluster.pins.map((p) => (
+                        <p key={p.id} className="text-xs border-b pb-1 last:border-0">• {p.content.slice(0, 50)}...</p>
+                      ))}
+                    </div>
+                  </Popup>
+                </Marker>
+              )
+            }
+
+            const post = cluster.pins[0]
             const [jLat, jLng] = jitterCoord(post.id, post.lat, post.lng)
             return (
               <CircleMarker
@@ -154,6 +255,7 @@ export default function MapContent({
             )
           })}
 
+
         {/* Feel layer - amber semi-transparent circle around user + confessions + moods */}
         {activeLayer === 'feel' && (
           <CircleMarker
@@ -170,7 +272,38 @@ export default function MapContent({
         {/* Confession markers */}
         {activeLayer === 'feel' &&
           feelConfessions &&
-          feelConfessions.map((c) => {
+          clusterPins(feelConfessions).map((cluster, cIdx) => {
+            const count = cluster.pins.length
+            if (count > 1) {
+              const mainPin = cluster.pins[0]
+              return (
+                <Marker
+                  key={`feel-cluster-${cIdx}`}
+                  position={new LatLng(cluster.center[0], cluster.center[1])}
+                  icon={createHolographicIcon(count, '#fbbf24')}
+                  eventHandlers={{
+                    click: (e) => {
+                      e.originalEvent.stopPropagation()
+                      onMapClick?.(cluster.center[0], cluster.center[1], mainPin.id)
+                    },
+                  }}
+                >
+                  <Tooltip direction="top" offset={[0, -110]} opacity={0.9}>
+                    <span>🌡 Clustered Confessions: {count} secrets here</span>
+                  </Tooltip>
+                  <Popup>
+                    <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                      <strong>{count} confessions:</strong>
+                      {cluster.pins.map((p) => (
+                        <p key={p.id} className="text-xs border-b pb-1 last:border-0">• &ldquo;{p.content.slice(0, 50)}...&rdquo;</p>
+                      ))}
+                    </div>
+                  </Popup>
+                </Marker>
+              )
+            }
+
+            const c = cluster.pins[0]
             const [jLat, jLng] = jitterCoord(c.id, c.lat, c.lng)
             return (
               <CircleMarker
@@ -196,6 +329,7 @@ export default function MapContent({
               </CircleMarker>
             )
           })}
+
 
         {/* Mood markers */}
         {activeLayer === 'feel' &&
@@ -230,7 +364,38 @@ export default function MapContent({
         {/* Truth layer - red incident markers */}
         {activeLayer === 'truth' &&
           truthIncidents &&
-          truthIncidents.map((incident) => {
+          clusterPins(truthIncidents).map((cluster, cIdx) => {
+            const count = cluster.pins.length
+            if (count > 1) {
+              const mainPin = cluster.pins[0]
+              return (
+                <Marker
+                  key={`truth-cluster-${cIdx}`}
+                  position={new LatLng(cluster.center[0], cluster.center[1])}
+                  icon={createHolographicIcon(count, '#ef4444')}
+                  eventHandlers={{
+                    click: (e) => {
+                      e.originalEvent.stopPropagation()
+                      onMapClick?.(cluster.center[0], cluster.center[1], mainPin.id)
+                    },
+                  }}
+                >
+                  <Tooltip direction="top" offset={[0, -110]} opacity={0.9}>
+                    <span>👁 Clustered Incidents: {count} reports here</span>
+                  </Tooltip>
+                  <Popup>
+                    <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                      <strong>{count} incidents:</strong>
+                      {cluster.pins.map((p) => (
+                        <p key={p.id} className="text-xs border-b pb-1 last:border-0">• {p.type} ({p.time_of_day})</p>
+                      ))}
+                    </div>
+                  </Popup>
+                </Marker>
+              )
+            }
+
+            const incident = cluster.pins[0]
             const [jLat, jLng] = jitterCoord(incident.id, incident.lat, incident.lng)
             return (
               <CircleMarker
@@ -257,9 +422,41 @@ export default function MapContent({
             )
           })}
 
+
         {/* Memory layer - purple markers at memory coordinates */}
         {activeLayer === 'memory' &&
-          memories.map((memory) => {
+          clusterPins(memories).map((cluster, cIdx) => {
+            const count = cluster.pins.length
+            if (count > 1) {
+              const mainPin = cluster.pins[0]
+              return (
+                <Marker
+                  key={`memory-cluster-${cIdx}`}
+                  position={new LatLng(cluster.center[0], cluster.center[1])}
+                  icon={createHolographicIcon(count, '#a855f7')}
+                  eventHandlers={{
+                    click: (e) => {
+                      e.originalEvent.stopPropagation()
+                      onMapClick?.(cluster.center[0], cluster.center[1], mainPin.id)
+                    },
+                  }}
+                >
+                  <Tooltip direction="top" offset={[0, -110]} opacity={0.9}>
+                    <span>🕰 Clustered Memories: {count} logged here</span>
+                  </Tooltip>
+                  <Popup>
+                    <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                      <strong>{count} memories:</strong>
+                      {cluster.pins.map((p) => (
+                        <p key={p.id} className="text-xs border-b pb-1 last:border-0">• {p.year_label}: {p.content.slice(0, 50)}...</p>
+                      ))}
+                    </div>
+                  </Popup>
+                </Marker>
+              )
+            }
+
+            const memory = cluster.pins[0]
             const [jLat, jLng] = jitterCoord(memory.id, memory.lat, memory.lng)
             return (
               <CircleMarker
@@ -284,6 +481,7 @@ export default function MapContent({
               </CircleMarker>
             )
           })}
+
 
         {/* Rhythm layer - green intensity overlay */}
         {activeLayer === 'rhythm' && (
@@ -321,7 +519,7 @@ export default function MapContent({
         />
       </MapContainer>
 
-      {/* CSS animation for pulsing dots */}
+      {/* CSS animation for pulsing dots and floating 3D towers */}
       <style>{`
         @keyframes pulse {
           0%, 100% {
@@ -334,7 +532,21 @@ export default function MapContent({
         .pulse-marker {
           animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
+        .holographic-3d-building {
+          animation: floatBuilding 3s ease-in-out infinite alternate;
+          background: none !important;
+          border: none !important;
+        }
+        @keyframes floatBuilding {
+          0% {
+            transform: translateY(0);
+          }
+          100% {
+            transform: translateY(-5px);
+          }
+        }
       `}</style>
     </div>
   )
 }
+

@@ -1,0 +1,19 @@
+1
+00:00:00,000 --> 00:00:05,000
+VEIL ATLAS: The invisible map of how a place truly feels.
+
+2
+00:00:05,000 --> 00:00:15,000
+Five anonymous, location-gated layers. NOW, FEEL, TRUTH, MEMORY, and RHYTHM.
+
+3
+00:00:15,000 --> 00:00:30,000
+Overlapping feelings cluster into 3D towers. Click to see details and zoom in.
+
+4
+00:00:30,000 --> 00:00:45,000
+⚡ EPHEMERALITY: Live signals within 500m that expire in 30 minutes.
+
+5
+00:00:45,000 --> 00:01:00,000
+Zero tracking. Pure location signal. Visit veil-atlas-app.vercel.app

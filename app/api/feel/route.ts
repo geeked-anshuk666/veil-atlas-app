@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { validateCoords, validateEnum, validateText, checkRateLimit, getClientIp } from '@/lib/validate'
+import { getCache, setCache, clearCache } from '@/lib/cache'
 
 const VALID_EMOTIONS = ['peaceful', 'joyful', 'anxious', 'melancholy', 'alive']
 
@@ -8,6 +9,14 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
   const lat = parseFloat(searchParams.get('lat') || '0')
   const lng = parseFloat(searchParams.get('lng') || '0')
+
+  const cacheKey = `feel_${lat.toFixed(3)}_${lng.toFixed(3)}`
+  const cached = getCache<any>(cacheKey)
+  if (cached) {
+    return NextResponse.json(cached, {
+      headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
+    })
+  }
 
   const rows = await sql`
     SELECT emotion, COUNT(*) as count
@@ -26,8 +35,7 @@ export async function GET(request: NextRequest) {
     LIMIT 50
   `
 
-
-  return NextResponse.json({
+  const payload = {
     dominant_emotion: rows[0]?.emotion || null,
     record_count: rows[0]?.count ? Number(rows[0].count) : 0,
     list: list.map((item) => ({
@@ -37,9 +45,14 @@ export async function GET(request: NextRequest) {
       lng: Number(item.lng),
       created_at: item.created_at,
     })),
+  }
+
+  // Cache for 30 seconds server-side
+  setCache(cacheKey, payload, 30000)
+
+  return NextResponse.json(payload, {
+    headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
   })
-
-
 }
 
 export async function POST(request: NextRequest) {
@@ -65,10 +78,11 @@ export async function POST(request: NextRequest) {
       INSERT INTO emotional_records (lat, lng, emotion, contributor_hash)
       VALUES (${lat}, ${lng}, ${emotion}, encode(sha256(${user_id}::bytea), 'hex'))
     `
+    // Evict the feel aggregate cache for this area
+    clearCache('feel_')
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('POST /api/feel error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
-

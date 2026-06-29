@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { validateCoords, validateEnum, validateText, checkRateLimit, getClientIp } from '@/lib/validate'
+import { getCache, setCache, clearCache } from '@/lib/cache'
 
 const VALID_INCIDENT_TYPES = [
   'harassment', 'theft', 'unsafe_lighting', 'suspicious_activity',
@@ -12,7 +13,27 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
   const lat = parseFloat(searchParams.get('lat') || '0')
   const lng = parseFloat(searchParams.get('lng') || '0')
+  const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
+  const limit = Math.max(1, Math.min(50, parseInt(searchParams.get('limit') || '10')))
   const userId = searchParams.get('user_id') || ''
+
+  const offset = (page - 1) * limit
+  const cacheKey = `truth_${lat.toFixed(4)}_${lng.toFixed(4)}_p${page}_l${limit}`
+
+  const cached = getCache<any>(cacheKey)
+  if (cached) {
+    return NextResponse.json({
+      total: cached.total,
+      breakdown: cached.breakdown,
+      list: cached.list.map((item: any) => ({
+        ...item,
+        is_mine: userId
+          ? item.contributor_hash === require('crypto').createHash('sha256').update(userId).digest('hex')
+          : false,
+        contributor_hash: undefined,
+      })),
+    })
+  }
 
   const rows = await sql`
     SELECT incident_type as type, COUNT(*) as count
@@ -28,11 +49,10 @@ export async function GET(request: NextRequest) {
     FROM incidents
     WHERE created_at > NOW() - INTERVAL '1 year'
     ORDER BY created_at DESC
-    LIMIT 50
+    LIMIT ${limit} OFFSET ${offset}
   `
 
-
-  return NextResponse.json({
+  const cachePayload = {
     total: rows.reduce((sum, r) => sum + Number(r.count), 0),
     breakdown: rows.map((r) => ({ type: r.type, count: Number(r.count) })),
     list: list.map((item) => ({
@@ -43,12 +63,26 @@ export async function GET(request: NextRequest) {
       lng: Number(item.lng),
       created_at: item.created_at,
       distance: Number(item.distance),
+      contributor_hash: item.contributor_hash,
+    })),
+  }
+
+  // Cache for 15 seconds
+  setCache(cacheKey, cachePayload, 15000)
+
+  return NextResponse.json({
+    total: cachePayload.total,
+    breakdown: cachePayload.breakdown,
+    list: cachePayload.list.map((item) => ({
+      ...item,
       is_mine: userId
         ? item.contributor_hash === require('crypto').createHash('sha256').update(userId).digest('hex')
         : false,
+      contributor_hash: undefined,
     })),
   })
 }
+
 
 export async function POST(request: NextRequest) {
   // Rate limit: 10 reports per minute per IP
@@ -80,7 +114,10 @@ export async function POST(request: NextRequest) {
       VALUES (${lat}, ${lng}, ${incident_type}, ${time_of_day},
         ${new Date().getDay()}, ${contributorHash})
     `
+    // Invalidate truth caches
+    clearCache('truth_')
     return NextResponse.json({ success: true })
+
   } catch (error) {
     console.error('POST /api/truth error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -103,7 +140,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
 
     await sql`DELETE FROM incidents WHERE id = ${id}`
+    // Invalidate truth caches
+    clearCache('truth_')
     return NextResponse.json({ success: true })
+
   } catch (error) {
     console.error('DELETE /api/truth error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

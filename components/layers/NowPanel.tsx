@@ -57,29 +57,59 @@ export default function NowPanel({
     }
   }, [selectedPinId])
 
-  // Fetch posts on mount and every 30 seconds
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+
+  // Reset page when user location changes
+  useEffect(() => {
+    setPage(1)
+    setHasMore(true)
+  }, [userLocation])
+
+  // Fetch posts when page or location changes
   useEffect(() => {
     if (!userLocation) return
 
     const fetchPosts = async () => {
       try {
-        setLoading(true)
+        if (page === 1) setLoading(true)
+        else setLoadingMore(true)
+
         const response = await fetch(
-          `/api/now?lat=${userLocation[0]}&lng=${userLocation[1]}`
+          `/api/now?lat=${userLocation[0]}&lng=${userLocation[1]}&page=${page}&limit=10&user_id=${encodeURIComponent(userId)}`
         )
         const data = await response.json()
-        setPosts(Array.isArray(data) ? data : [])
+        const postsList = Array.isArray(data) ? data : []
+        
+        if (page === 1) {
+          setPosts(postsList)
+        } else {
+          setPosts((prev) => [...prev, ...postsList])
+        }
+
+        // If we got fewer than 10 posts, there are no more pages
+        if (postsList.length < 10) {
+          setHasMore(false)
+        } else {
+          setHasMore(true)
+        }
       } catch (error) {
         console.error('[v0] Error fetching now posts:', error)
       } finally {
         setLoading(false)
+        setLoadingMore(false)
       }
     }
 
     fetchPosts()
-    const interval = setInterval(fetchPosts, 30000)
-    return () => clearInterval(interval)
-  }, [userLocation])
+  }, [userLocation, page])
+
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore) {
+      setPage((p) => p + 1)
+    }
+  }
 
   const handleSubmit = async () => {
     if (!inputValue.trim() || !userLocation) return
@@ -97,8 +127,10 @@ export default function NowPanel({
         }),
       })
       setInputValue('')
+      setPage(1)
+      setHasMore(true)
       const response = await fetch(
-        `/api/now?lat=${userLocation[0]}&lng=${userLocation[1]}`
+        `/api/now?lat=${userLocation[0]}&lng=${userLocation[1]}&page=1&limit=10&user_id=${encodeURIComponent(userId)}`
       )
       const data = await response.json()
       setPosts(Array.isArray(data) ? data : [])
@@ -109,6 +141,7 @@ export default function NowPanel({
       setSubmitting(false)
     }
   }
+
 
   const handleDeletePost = async (postId: string) => {
     try {
@@ -251,7 +284,8 @@ export default function NowPanel({
             </div>
           ))
         ) : posts.length > 0 ? (
-          posts.map((post, idx) => {
+          <>
+            {posts.map((post, idx) => {
             const isSelected = post.id === selectedPinId
             const isMine = isMyPost(post)
             return (
@@ -361,13 +395,27 @@ export default function NowPanel({
 
                 <ProgressBar percentage={getProgressPercentage(post.created_at)} color="blue" />
               </div>
-            )
-          })
+            )})}
+            {hasMore && (
+              <button
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className={`w-full py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl border transition-all active:scale-[0.98] ${
+                  theme === 'dark'
+                    ? 'border-zinc-900 bg-zinc-950/20 text-zinc-400 hover:bg-zinc-900/40 hover:text-white'
+                    : 'border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+                }`}
+              >
+                {loadingMore ? 'Retrieving signals...' : 'Load More Signals'}
+              </button>
+            )}
+          </>
         ) : (
-          <div className={`text-center py-12 ${theme === 'dark' ? 'text-zinc-500' : 'text-zinc-600'}`}>
-            <p className="animate-breathing text-sm">Quiet here right now.</p>
-          </div>
-        )}
+        <div className={`text-center py-12 ${theme === 'dark' ? 'text-zinc-500' : 'text-zinc-600'}`}>
+          <p className="animate-breathing text-sm">Quiet here right now.</p>
+        </div>
+      )}
+
       </div>
 
       {/* GPS Accuracy Warning */}

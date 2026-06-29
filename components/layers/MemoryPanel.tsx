@@ -45,31 +45,64 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, se
     }
   }, [selectedPinId])
 
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+
+  // Reset pagination when location changes
+  useEffect(() => {
+    setPage(1)
+    setHasMore(true)
+  }, [selectedLocation, userLocation])
+
   useEffect(() => {
     if (!targetLocation) return
 
-
     const fetchData = async () => {
       try {
-        setLoading(true)
-        const [memRes, echoRes] = await Promise.all([
-          fetch(`/api/memory?lat=${targetLocation[0]}&lng=${targetLocation[1]}&user_id=${encodeURIComponent(userId)}`),
-          fetch(`/api/echo?lat=${targetLocation[0]}&lng=${targetLocation[1]}`),
-        ])
-        const memData = await memRes.json()
-        const echData = await echoRes.json()
-        setMemories(Array.isArray(memData) ? memData : [])
+        if (page === 1) {
+          setLoading(true)
+          const echoRes = await fetch(`/api/echo?lat=${targetLocation[0]}&lng=${targetLocation[1]}`)
+          const echData = await echoRes.json()
+          setEchoData(echData && echData.id ? echData : null)
+        } else {
+          setLoadingMore(true)
+        }
 
-        setEchoData(echData && echData.id ? echData : null)
+        const memRes = await fetch(
+          `/api/memory?lat=${targetLocation[0]}&lng=${targetLocation[1]}&user_id=${encodeURIComponent(userId)}&page=${page}&limit=10`
+        )
+        const memData = await memRes.json()
+        const memList = Array.isArray(memData) ? memData : []
+
+        if (page === 1) {
+          setMemories(memList)
+        } else {
+          setMemories((prev) => [...prev, ...memList])
+        }
+
+        if (memList.length < 10) {
+          setHasMore(false)
+        } else {
+          setHasMore(true)
+        }
       } catch (error) {
         console.error('[v0] Error fetching memory data:', error)
       } finally {
         setLoading(false)
+        setLoadingMore(false)
       }
     }
 
     fetchData()
-  }, [selectedLocation, userLocation])
+  }, [selectedLocation, userLocation, page])
+
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore) {
+      setPage((p) => p + 1)
+    }
+  }
+
 
   const handleSubmitMemory = async () => {
     if (!memoryText.trim() || !targetLocation) return
@@ -342,8 +375,19 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, se
                 </div>
               )
             })}
-
-
+            {hasMore && (
+              <button
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className={`w-full py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl border transition-all active:scale-[0.98] mt-2 ${
+                  theme === 'dark'
+                    ? 'border-zinc-900 bg-zinc-950/20 text-zinc-400 hover:bg-zinc-900/40 hover:text-white'
+                    : 'border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+                }`}
+              >
+                {loadingMore ? 'Retrieving memories...' : 'Load More Memories'}
+              </button>
+            )}
           </div>
         ) : (
           <div className={`text-center py-6 text-sm border border-dashed rounded-xl ${
@@ -353,6 +397,7 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, se
           </div>
         )}
       </div>
+
 
       {/* Input Action Buttons */}
       <div className="space-y-3">

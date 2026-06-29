@@ -3,20 +3,33 @@ import { dynamoNow, NOW_TABLE } from '@/lib/dynamo'
 import { QueryCommand, PutCommand, DeleteCommand, GetCommand, ScanCommand } from '@aws-sdk/lib-dynamodb'
 import { geoCell, neighborCells, haversine } from '@/lib/geo'
 import { validateCoords, validateText, checkRateLimit, getClientIp } from '@/lib/validate'
-
+import { getCache, setCache, clearCache } from '@/lib/cache'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
   const lat = parseFloat(searchParams.get('lat') || '0')
   const lng = parseFloat(searchParams.get('lng') || '0')
+  const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
+  const limit = Math.max(1, Math.min(50, parseInt(searchParams.get('limit') || '10')))
   const requestingUserId = searchParams.get('user_id') || ''
-  // Derive owner hash the same way POST stores it
+  
   const myOwnerHash = requestingUserId
     ? Buffer.from(requestingUserId).toString('base64')
     : ''
 
   const cells = neighborCells(lat, lng)
   const all: any[] = []
+
+  // Check cache for this cell set + page + limit combination
+  const cacheKey = `now_${cells.join('-')}_p${page}_l${limit}`
+  const cached = getCache<any[]>(cacheKey)
+  if (cached) {
+    return NextResponse.json(cached.map((p) => ({
+      ...p,
+      is_mine: myOwnerHash ? p.owner_hash === myOwnerHash : false,
+      owner_hash: undefined,
+    })))
+  }
 
   await Promise.all(
     cells.map(async (cell) => {
@@ -27,7 +40,7 @@ export async function GET(request: NextRequest) {
             KeyConditionExpression: 'geo_cell = :c',
             ExpressionAttributeValues: { ':c': cell },
             ScanIndexForward: false,
-            Limit: 30,
+            Limit: 40,
           })
         )
         all.push(...(res.Items || []))
@@ -38,9 +51,12 @@ export async function GET(request: NextRequest) {
   const nearby = all
     .filter((p) => haversine(lat, lng, p.lat, p.lng) < 500)
     .sort((a, b) => b.created_at - a.created_at)
-    .slice(0, 20)
 
-  if (nearby.length === 0) {
+  // Paginated slice
+  const offset = (page - 1) * limit
+  const paginated = nearby.slice(offset, offset + limit)
+
+  if (paginated.length === 0 && page === 1) {
     const mockPosts = [
       {
         id: 'mock-1',
@@ -70,12 +86,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(mockPosts)
   }
 
-  return NextResponse.json(nearby.map((p) => ({
+  // Cache paginated results for 5 seconds
+  setCache(cacheKey, paginated, 5000)
+
+  return NextResponse.json(paginated.map((p) => ({
     ...p,
     is_mine: myOwnerHash ? p.owner_hash === myOwnerHash : false,
     owner_hash: undefined, // never expose raw hash
   })))
-
 }
 
 export async function POST(request: NextRequest) {

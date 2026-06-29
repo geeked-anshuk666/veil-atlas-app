@@ -62,31 +62,64 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, sele
     }
   }, [selectedPinId])
 
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+
+  // Reset page when target location changes
+  useEffect(() => {
+    setPage(1)
+    setHasMore(true)
+  }, [selectedLocation, userLocation])
+
   useEffect(() => {
     if (!targetLocation) return
 
-
     const fetchData = async () => {
       try {
-        setLoading(true)
-        const [feelRes, confessionRes] = await Promise.all([
-          fetch(`/api/feel?lat=${targetLocation[0]}&lng=${targetLocation[1]}`),
-          fetch(`/api/feel/pins?lat=${targetLocation[0]}&lng=${targetLocation[1]}&user_id=${encodeURIComponent(userId)}`),
-        ])
-        const feelData = await feelRes.json()
+        if (page === 1) {
+          setLoading(true)
+          const feelRes = await fetch(`/api/feel?lat=${targetLocation[0]}&lng=${targetLocation[1]}`)
+          const feelData = await feelRes.json()
+          setFeel(feelData)
+        } else {
+          setLoadingMore(true)
+        }
+
+        const confessionRes = await fetch(
+          `/api/feel/pins?lat=${targetLocation[0]}&lng=${targetLocation[1]}&user_id=${encodeURIComponent(userId)}&page=${page}&limit=10`
+        )
         const confessionData = await confessionRes.json()
-        setFeel(feelData)
-        // Adjust confessions mapping as API returns array
-        setConfessions(confessionData.pins || [])
+        const newPins = confessionData.pins || []
+
+        if (page === 1) {
+          setConfessions(newPins)
+        } else {
+          setConfessions((prev) => [...prev, ...newPins])
+        }
+
+        if (newPins.length < 10) {
+          setHasMore(false)
+        } else {
+          setHasMore(true)
+        }
       } catch (error) {
         console.error('[v0] Error fetching feel data:', error)
       } finally {
         setLoading(false)
+        setLoadingMore(false)
       }
     }
 
     fetchData()
-  }, [selectedLocation, userLocation])
+  }, [selectedLocation, userLocation, page])
+
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore) {
+      setPage((p) => p + 1)
+    }
+  }
+
 
   const handleEmotion = async (emotion: string) => {
     if (!targetLocation) return
@@ -329,6 +362,19 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, sele
                 </div>
               )
             })}
+            {hasMore && (
+              <button
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className={`w-full py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl border transition-all active:scale-[0.98] mt-2 ${
+                  theme === 'dark'
+                    ? 'border-zinc-900 bg-zinc-950/20 text-zinc-400 hover:bg-zinc-900/40 hover:text-white'
+                    : 'border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+                }`}
+              >
+                {loadingMore ? 'Retrieving confessions...' : 'Load More Confessions'}
+              </button>
+            )}
           </div>
         ) : (
           <div className={`text-center py-6 text-sm border border-dashed rounded-xl ${
@@ -338,6 +384,7 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, sele
           </div>
         )}
       </div>
+
     </div>
   )
 }

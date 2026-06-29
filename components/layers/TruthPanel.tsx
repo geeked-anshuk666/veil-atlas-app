@@ -62,27 +62,69 @@ export default function TruthPanel({ userLocation, selectedLocation, userId, sel
     }
   }, [selectedPinId])
 
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+
+  // Reset page when target location changes
+  useEffect(() => {
+    setPage(1)
+    setHasMore(true)
+  }, [selectedLocation, userLocation])
+
   useEffect(() => {
     if (!targetLocation) return
 
-
     const fetchData = async () => {
       try {
-        setLoading(true)
+        if (page === 1) {
+          setLoading(true)
+        } else {
+          setLoadingMore(true)
+        }
+
         const response = await fetch(
-          `/api/truth?lat=${targetLocation[0]}&lng=${targetLocation[1]}&user_id=${encodeURIComponent(userId)}`
+          `/api/truth?lat=${targetLocation[0]}&lng=${targetLocation[1]}&user_id=${encodeURIComponent(userId)}&page=${page}&limit=10`
         )
         const truthData = await response.json()
-        setData(truthData)
+
+        if (page === 1) {
+          setData(truthData)
+        } else {
+          setData((prev) => {
+            if (!prev) return truthData
+            return {
+              ...prev,
+              list: [...(prev.list || []), ...(truthData.list || [])],
+              total: truthData.total,
+              breakdown: truthData.breakdown,
+            }
+          })
+        }
+
+        const listLength = truthData.list?.length || 0
+        if (listLength < 10) {
+          setHasMore(false)
+        } else {
+          setHasMore(true)
+        }
       } catch (error) {
         console.error('[v0] Error fetching truth data:', error)
       } finally {
         setLoading(false)
+        setLoadingMore(false)
       }
     }
 
     fetchData()
-  }, [selectedLocation, userLocation])
+  }, [selectedLocation, userLocation, page])
+
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore) {
+      setPage((p) => p + 1)
+    }
+  }
+
 
   const handleSubmitIncident = async (
     type: string,
@@ -265,10 +307,20 @@ export default function TruthPanel({ userLocation, selectedLocation, userId, sel
                       </div>
                     </div>
                   )
-
             })}
-
-
+            {hasMore && (
+              <button
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className={`w-full py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl border transition-all active:scale-[0.98] mt-2 ${
+                  theme === 'dark'
+                    ? 'border-zinc-900 bg-zinc-950/20 text-zinc-400 hover:bg-zinc-900/40 hover:text-white'
+                    : 'border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+                }`}
+              >
+                {loadingMore ? 'Retrieving incidents...' : 'Load More Incidents'}
+              </button>
+            )}
           </div>
         ) : (
           <div className={`text-center py-6 text-sm border border-dashed rounded-xl ${

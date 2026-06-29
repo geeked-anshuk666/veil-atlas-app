@@ -90,7 +90,7 @@ function createHolographicIcon(count: number, color: string) {
   const yAntenna = yRoof - 22
 
   const svgHtml = [
-    `<svg width="60" height="160" viewBox="0 0 60 160" style="overflow:visible;filter:drop-shadow(0 0 8px ${color}80)">`,
+    `<svg class="holographic-svg" width="60" height="160" viewBox="0 0 60 160" style="overflow:visible;filter:drop-shadow(0 0 8px ${color}80)">`,
     `<defs>`,
     `<linearGradient id="cg${count}" x1="0" y1="1" x2="0" y2="0">`,
     `<stop offset="0%" stop-color="${color}" stop-opacity="0.05"/>`,
@@ -644,9 +644,11 @@ export default function MapContent({
           animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
         .holographic-3d-building {
-          animation: floatBuilding 3.5s ease-in-out infinite alternate;
           background: none !important;
           border: none !important;
+        }
+        .holographic-svg {
+          animation: floatBuilding 3.5s ease-in-out infinite alternate;
         }
         @keyframes floatBuilding {
           0% {

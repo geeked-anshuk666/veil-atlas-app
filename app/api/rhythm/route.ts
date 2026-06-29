@@ -51,9 +51,15 @@ export async function POST(request: NextRequest) {
     if (userErr) return NextResponse.json({ error: userErr }, { status: 400 })
 
     const now = new Date()
+    // Estimate local time from longitude: lng/15 gives UTC offset in hours
+    const utcOffsetHours = Math.round(lng / 15)
+    const localMs = now.getTime() + utcOffsetHours * 3600000
+    const localDate = new Date(localMs)
+    const localHour = localDate.getUTCHours()
+    const localDay = localDate.getUTCDay() // 0=Sun, 1=Mon, ...
     await sql`
       INSERT INTO checkins (lat, lng, hour_of_day, day_of_week, contributor_hash)
-      VALUES (${lat}, ${lng}, ${now.getHours()}, ${now.getDay()},
+      VALUES (${lat}, ${lng}, ${localHour}, ${localDay},
         encode(sha256(${user_id}::bytea), 'hex'))
     `
     return NextResponse.json({ success: true })

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import { useTheme } from '@/lib/theme-context'
@@ -228,11 +228,140 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, se
 
   return (
     <div className="space-y-6 pt-2">
-      <div>
+      {/* Header + Action Buttons at TOP */}
+      <div className="flex justify-between items-center">
         <h2 className={`text-xs font-bold uppercase tracking-wider ${theme === 'dark' ? 'text-purple-400' : 'text-purple-600'}`}>
-          🕰 layers of time
+          ðŸ•° layers of time
         </h2>
+        {!showNewMemory && !showNewEcho && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowNewMemory(true)}
+              className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1.5 rounded-lg transition-all font-bold active:scale-[0.98]"
+            >
+              + memory
+            </button>
+            <button
+              onClick={() => setShowNewEcho(true)}
+              className={`border text-xs px-3 py-1.5 rounded-lg transition-all font-bold active:scale-[0.98] ${
+                theme === 'dark'
+                  ? 'border-zinc-800 text-zinc-300 hover:bg-zinc-900'
+                  : 'border-zinc-200 text-zinc-600 hover:bg-zinc-100'
+              }`}
+            >
+              + echo
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Inline form: new memory */}
+      {showNewMemory && (
+        <div className={`space-y-3 p-4 rounded-2xl border ${
+          theme === 'dark' ? 'bg-zinc-950/50 border-purple-500/30' : 'bg-purple-50 border-purple-300'
+        }`}>
+          <input
+            type="text"
+            value={memoryYear}
+            onChange={(e) => setMemoryYear(e.target.value)}
+            placeholder="Year (e.g. 1998, 2012)"
+            className={`w-full border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none transition-all ${
+              theme === 'dark'
+                ? 'bg-zinc-950 border-zinc-800 text-white focus:border-purple-500/50'
+                : 'bg-white border-zinc-200 text-zinc-900 focus:border-purple-500/50'
+            }`}
+          />
+          <textarea
+            value={memoryText}
+            onChange={(e) => setMemoryText(e.target.value)}
+            placeholder="What happened here?"
+            className={`w-full border rounded-xl px-3.5 py-3 text-sm focus:outline-none transition-all resize-none h-24 ${
+              theme === 'dark'
+                ? 'bg-zinc-950 border-zinc-800 text-white focus:border-purple-500/50'
+                : 'bg-white border-zinc-200 text-zinc-900 focus:border-purple-500/50'
+            }`}
+            autoFocus
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setShowNewMemory(false)
+                setMemoryText('')
+                setMemoryYear('')
+              }}
+              className={`flex-1 text-sm py-2.5 rounded-xl transition-all font-semibold border ${
+                theme === 'dark'
+                  ? 'border-zinc-800 text-zinc-300 hover:bg-zinc-900'
+                  : 'border-zinc-200 text-zinc-600 hover:bg-zinc-100'
+              }`}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmitMemory}
+              disabled={submitting || !memoryText.trim()}
+              className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-white text-sm py-2.5 rounded-xl transition-all font-semibold active:scale-[0.98]"
+            >
+              {submitting ? 'Pinning...' : 'Pin Memory'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Inline form: new echo */}
+      {showNewEcho && (
+        <div className={`space-y-3 p-4 rounded-2xl border ${
+          theme === 'dark' ? 'bg-zinc-950/50 border-purple-500/30' : 'bg-purple-50 border-purple-300'
+        }`}>
+          <input
+            type="text"
+            value={echoFor}
+            onChange={(e) => setEchoFor(e.target.value)}
+            placeholder="Recipient name/initials (optional)"
+            className={`w-full border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none transition-all ${
+              theme === 'dark'
+                ? 'bg-zinc-950 border-zinc-800 text-white focus:border-purple-500/50'
+                : 'bg-white border-zinc-200 text-zinc-900 focus:border-purple-500/50'
+            }`}
+          />
+          <textarea
+            value={echoText}
+            onChange={(e) => setEchoText(e.target.value)}
+            placeholder="Whisper a secret message locked to this spot..."
+            className={`w-full border rounded-xl px-3.5 py-3 text-sm focus:outline-none transition-all resize-none h-24 ${
+              theme === 'dark'
+                ? 'bg-zinc-950 border-zinc-800 text-white focus:border-purple-500/50'
+                : 'bg-white border-zinc-200 text-zinc-900 focus:border-purple-500/50'
+            }`}
+            autoFocus
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setShowNewEcho(false)
+                setEchoText('')
+                setEchoFor('')
+              }}
+              className={`flex-1 text-sm py-2.5 rounded-xl transition-all font-semibold border ${
+                theme === 'dark'
+                  ? 'border-zinc-800 text-zinc-300 hover:bg-zinc-900'
+                  : 'border-zinc-200 text-zinc-600 hover:bg-zinc-100'
+              }`}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmitEcho}
+              disabled={submitting || !echoText.trim()}
+              className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-white text-sm py-2.5 rounded-xl transition-all font-semibold active:scale-[0.98]"
+            >
+              {submitting ? 'Whispering...' : 'Whisper Echo'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className={`h-px ${theme === 'dark' ? 'bg-zinc-900' : 'bg-zinc-200'}`} />
 
       {/* Echoes Section */}
       <div className="space-y-3">
@@ -240,12 +369,11 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, se
           Physical Echoes (Hidden Messages)
         </h3>
         {echoData && (echoData as any).id ? (
-
           (() => {
             const unlocked = isEchoUnlocked(echoData)
             const dist = getDistance(echoData.lat, echoData.lng)
             return (
-              <div 
+              <div
                 className={`rounded-2xl p-5 border transition-all ${
                   unlocked
                     ? theme === 'dark'
@@ -263,7 +391,7 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, se
                 {unlocked ? (
                   <div>
                     <div className="flex gap-2 items-center mb-2.5">
-                      <span className="text-lg">🔓</span>
+                      <span className="text-lg">ðŸ”“</span>
                       <span className="text-[10px] font-bold uppercase tracking-wider bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded-full">
                         Echo Decrypted
                       </span>
@@ -277,13 +405,12 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, se
                   </div>
                 ) : (
                   <div className="text-center py-4 space-y-2">
-                    <div className="text-3xl filter grayscale select-none">🔒</div>
-                    <div className="text-sm font-semibold text-zinc-400">Locked Echo Presence-Gated</div>
+                    <div className="text-3xl filter grayscale select-none">ðŸ”’</div>
+                    <div className="text-sm font-semibold text-zinc-400">Locked Echo â€” Presence-Gated</div>
                     <p className="text-xs text-zinc-500 max-w-xs mx-auto">
                       A voice was whispered here. Get within <strong>50m</strong> to unlock. (Currently {formatDistance(dist)} away)
                     </p>
                   </div>
-
                 )}
               </div>
             )
@@ -336,13 +463,13 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, se
                           onClick={(e) => { e.stopPropagation(); setEditingMemoryId(mem.id); setEditText(mem.content); setEditYear(mem.year_label || '') }}
                           className="text-[10px] uppercase font-bold tracking-wider text-purple-400 hover:text-purple-300 transition-colors"
                         >
-                          ✏ edit
+                          âœ edit
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleDeleteMemory(mem.id) }}
                           className="text-[10px] uppercase font-bold tracking-wider text-red-500 hover:text-red-400 transition-colors"
                         >
-                          🗑 delete
+                          ðŸ—‘ delete
                         </button>
                       </div>
                     )}
@@ -397,129 +524,7 @@ export default function MemoryPanel({ userLocation, selectedLocation, userId, se
           </div>
         )}
       </div>
-
-
-      {/* Input Action Buttons */}
-      <div className="space-y-3">
-        {!showNewMemory && !showNewEcho ? (
-          <div className="flex gap-2.5">
-            <button
-              onClick={() => setShowNewMemory(true)}
-              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-sm py-3.5 rounded-xl transition-all font-semibold shadow-lg shadow-purple-600/15 active:scale-[0.98]"
-            >
-              + add memory
-            </button>
-            <button
-              onClick={() => setShowNewEcho(true)}
-              className={`flex-1 border text-sm py-3.5 rounded-xl transition-all font-semibold active:scale-[0.98] ${
-                theme === 'dark'
-                  ? 'border-zinc-800 text-zinc-300 hover:bg-zinc-900'
-                  : 'border-zinc-200 text-zinc-600 hover:bg-zinc-100'
-              }`}
-            >
-              + whisper echo
-            </button>
-          </div>
-        ) : showNewMemory ? (
-          <div className={`space-y-3 p-4 rounded-2xl border ${
-            theme === 'dark' ? 'bg-zinc-950/50 border-zinc-900' : 'bg-zinc-50 border-zinc-200'
-          }`}>
-            <input
-              type="text"
-              value={memoryYear}
-              onChange={(e) => setMemoryYear(e.target.value)}
-              placeholder="Year (e.g. 1998, 2012)"
-              className={`w-full border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none transition-all ${
-                theme === 'dark'
-                  ? 'bg-zinc-950 border-zinc-800 text-white focus:border-purple-500/50'
-                  : 'bg-white border-zinc-200 text-zinc-900 focus:border-purple-500/50'
-              }`}
-            />
-            <textarea
-              value={memoryText}
-              onChange={(e) => setMemoryText(e.target.value)}
-              placeholder="What happened here?"
-              className={`w-full border rounded-xl px-3.5 py-3 text-sm focus:outline-none transition-all resize-none h-24 ${
-                theme === 'dark'
-                  ? 'bg-zinc-950 border-zinc-800 text-white focus:border-purple-500/50'
-                  : 'bg-white border-zinc-200 text-zinc-900 focus:border-purple-500/50'
-              }`}
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  setShowNewMemory(false)
-                  setMemoryText('')
-                  setMemoryYear('')
-                }}
-                className={`flex-1 text-sm py-2.5 rounded-xl transition-all font-semibold border ${
-                  theme === 'dark'
-                    ? 'border-zinc-800 text-zinc-300 hover:bg-zinc-900'
-                    : 'border-zinc-200 text-zinc-600 hover:bg-zinc-100'
-                }`}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmitMemory}
-                disabled={submitting || !memoryText.trim()}
-                className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-white text-sm py-2.5 rounded-xl transition-all font-semibold active:scale-[0.98]"
-              >
-                Pin Memory
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className={`space-y-3 p-4 rounded-2xl border ${
-            theme === 'dark' ? 'bg-zinc-950/50 border-zinc-900' : 'bg-zinc-50 border-zinc-200'
-          }`}>
-            <input
-              type="text"
-              value={echoFor}
-              onChange={(e) => setEchoFor(e.target.value)}
-              placeholder="Recipient name/initials (optional)"
-              className={`w-full border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none transition-all ${
-                theme === 'dark'
-                  ? 'bg-zinc-950 border-zinc-800 text-white focus:border-purple-500/50'
-                  : 'bg-white border-zinc-200 text-zinc-900 focus:border-purple-500/50'
-              }`}
-            />
-            <textarea
-              value={echoText}
-              onChange={(e) => setEchoText(e.target.value)}
-              placeholder="Whisper a secret message locked to this spot..."
-              className={`w-full border rounded-xl px-3.5 py-3 text-sm focus:outline-none transition-all resize-none h-24 ${
-                theme === 'dark'
-                  ? 'bg-zinc-950 border-zinc-800 text-white focus:border-purple-500/50'
-                  : 'bg-white border-zinc-200 text-zinc-900 focus:border-purple-500/50'
-              }`}
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  setShowNewEcho(false)
-                  setEchoText('')
-                  setEchoFor('')
-                }}
-                className={`flex-1 text-sm py-2.5 rounded-xl transition-all font-semibold border ${
-                  theme === 'dark'
-                    ? 'border-zinc-800 text-zinc-300 hover:bg-zinc-900'
-                    : 'border-zinc-200 text-zinc-600 hover:bg-zinc-100'
-                }`}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmitEcho}
-                disabled={submitting || !echoText.trim()}
-                className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-white text-sm py-2.5 rounded-xl transition-all font-semibold active:scale-[0.98]"
-              >
-                Whisper Echo
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   )
 }
+

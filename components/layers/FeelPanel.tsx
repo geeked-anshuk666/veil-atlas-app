@@ -160,13 +160,16 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, sele
           lat: targetLocation[0],
           lng: targetLocation[1],
           content: newConfessionText,
+          user_id: userId,
         }),
       })
       setNewConfessionText('')
       setShowNewConfession(false)
-      // Refetch
+      setPage(1)
+      setHasMore(true)
+      // Refetch page 1
       const res = await fetch(
-        `/api/feel/pins?lat=${targetLocation[0]}&lng=${targetLocation[1]}&user_id=${encodeURIComponent(userId)}`
+        `/api/feel/pins?lat=${targetLocation[0]}&lng=${targetLocation[1]}&user_id=${encodeURIComponent(userId)}&page=1&limit=10`
       )
       const data = await res.json()
       setConfessions(data.pins || [])

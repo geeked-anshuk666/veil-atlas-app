@@ -17,9 +17,12 @@ export default function RadialChart({ hourlyData }: RadialChartProps) {
   }, [])
 
   const maxCount = Math.max(...hourlyData.map((h) => h.count), 1)
-  const centerX = 120
-  const centerY = 120
+  const svgWidth = 280
+  const svgHeight = 280
+  const centerX = svgWidth / 2
+  const centerY = svgHeight / 2
   const radius = 100
+
 
   // Create 24 segments in a circle
   const segments = hourlyData.map((data) => {
@@ -47,8 +50,7 @@ export default function RadialChart({ hourlyData }: RadialChartProps) {
     }
   })
 
-  const svgWidth = 240
-  const svgHeight = 240
+
 
   return (
     <div className="flex justify-center py-4">

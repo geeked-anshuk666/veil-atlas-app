@@ -2,23 +2,30 @@ import postgres from 'postgres'
 import { awsCredentialsProvider } from "@vercel/functions/oidc"
 import { Signer } from "@aws-sdk/rds-signer"
 
+const pgHost = process.env.STORAGE_PGHOST || process.env.PGHOST || ''
+const pgPort = parseInt(process.env.STORAGE_PGPORT || process.env.PGPORT || '5432')
+const pgUser = process.env.STORAGE_PGUSER || process.env.PGUSER || 'postgres'
+const pgDatabase = process.env.STORAGE_PGDATABASE || process.env.PGDATABASE || ''
+const awsRoleArn = process.env.STORAGE_AWS_ROLE_ARN || process.env.AWS_ROLE_ARN || ''
+const awsRegion = process.env.STORAGE_AWS_REGION || process.env.AWS_REGION || 'us-east-1'
+
 const signer = new Signer({
-  hostname: process.env.PGHOST!,
-  port: parseInt(process.env.PGPORT || '5432'),
-  username: process.env.PGUSER!,
-  region: process.env.AWS_REGION || 'us-east-1',
+  hostname: pgHost,
+  port: pgPort,
+  username: pgUser,
+  region: awsRegion,
   credentials: awsCredentialsProvider({
-    roleArn: process.env.AWS_ROLE_ARN!,
-    clientConfig: { region: process.env.AWS_REGION || 'us-east-1' },
+    roleArn: awsRoleArn,
+    clientConfig: { region: awsRegion },
   }),
 })
 
 // Aurora PostgreSQL — uses dynamic IAM auth token connection
 const sql = postgres({
-  host: process.env.PGHOST!,
-  port: parseInt(process.env.PGPORT || '5432'),
-  database: process.env.PGDATABASE!,
-  user: process.env.PGUSER!,
+  host: pgHost,
+  port: pgPort,
+  database: pgDatabase,
+  user: pgUser,
   password: async () => {
     try {
       const token = await signer.getAuthToken()
@@ -35,4 +42,5 @@ const sql = postgres({
 })
 
 export default sql
+
 

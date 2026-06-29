@@ -184,7 +184,8 @@ export default function FeelPanel({ userLocation, selectedLocation, userId, sele
       {/* Emotion selector */}
       <div className="grid grid-cols-5 gap-2.5 justify-center">
         {emotions.map(({ emoji, label, value }) => {
-          const isActive = activeUserEmotion === value || feel?.dominant_emotion === value
+          const isActive = activeUserEmotion === value
+
           return (
             <button
               key={value}

@@ -265,13 +265,17 @@ export default function MapContent({
           />
         )}
 
-        {/* Confession markers */}
-        {activeLayer === 'feel' &&
-          feelConfessions &&
-          clusterPins(feelConfessions).map((cluster, cIdx) => {
-            const count = cluster.pins.length
+        {/* Feel layer confessions + moods clustered together */}
+        {activeLayer === 'feel' && (() => {
+          const unifiedPins = [
+            ...(feelConfessions || []).map(c => ({ ...c, type: 'confession' as const })),
+            ...(feelMoods || []).map(m => ({ ...m, type: 'mood' as const }))
+          ];
+          
+          return clusterPins(unifiedPins).map((cluster, cIdx) => {
+            const count = cluster.pins.length;
             if (count > 1) {
-              const mainPin = cluster.pins[0]
+              const mainPin = cluster.pins[0];
               return (
                 <Marker
                   key={`feel-cluster-${cIdx}`}
@@ -279,83 +283,87 @@ export default function MapContent({
                   icon={createHolographicIcon(count, '#fbbf24')}
                   eventHandlers={{
                     click: (e) => {
-                      e.originalEvent.stopPropagation()
-                      onMapClick?.(cluster.center[0], cluster.center[1], mainPin.id)
+                      e.originalEvent.stopPropagation();
+                      onMapClick?.(cluster.center[0], cluster.center[1], mainPin.id);
                     },
                   }}
                 >
                   <Tooltip direction="top" offset={[0, -110]} opacity={0.9}>
-                    <span>🌡 Clustered Confessions: {count} secrets here</span>
+                    <span>🌡 Clustered Feelings: {count} signals here</span>
                   </Tooltip>
                   <Popup>
                     <div className="space-y-1.5 max-h-32 overflow-y-auto">
-                      <strong>{count} confessions:</strong>
+                      <strong>{count} items logged here:</strong>
                       {cluster.pins.map((p) => (
-                        <p key={p.id} className="text-xs border-b pb-1 last:border-0">• &ldquo;{p.content.slice(0, 50)}...&rdquo;</p>
+                        <div key={p.id} className="text-xs border-b pb-1 last:border-0">
+                          {p.type === 'confession' ? (
+                            <span>• 🌡 Confession: &ldquo;{p.content?.slice(0, 40)}...&rdquo;</span>
+                          ) : (
+                            <span>• {getEmotionEmoji(p.emotion || '')} Mood: {p.emotion}</span>
+                          )}
+                        </div>
                       ))}
                     </div>
                   </Popup>
                 </Marker>
-              )
+              );
             }
 
-            const c = cluster.pins[0]
-            const [jLat, jLng] = jitterCoord(c.id, c.lat, c.lng)
-            return (
-              <CircleMarker
-                key={c.id}
-                center={new LatLng(jLat, jLng)}
-                radius={8}
-                fillOpacity={0.8}
-                color="#fbbf24"
-                fillColor="#fbbf24"
-                weight={2}
-                className="pulse-marker"
-                eventHandlers={{
-                  click: (e) => {
-                    e.originalEvent.stopPropagation()
-                    onMapClick?.(c.lat, c.lng, c.id)
-                  },
-                }}
-              >
-                <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
-                  <span>🌡 Confession: &ldquo;{c.content.slice(0, 30)}...&rdquo;</span>
-                </Tooltip>
-                <Popup>&ldquo;{c.content}&rdquo;</Popup>
-              </CircleMarker>
-            )
-          })}
+            const p = cluster.pins[0];
+            const [jLat, jLng] = jitterCoord(p.id, p.lat, p.lng);
+            if (p.type === 'confession') {
+              return (
+                <CircleMarker
+                  key={p.id}
+                  center={new LatLng(jLat, jLng)}
+                  radius={8}
+                  fillOpacity={0.8}
+                  color="#fbbf24"
+                  fillColor="#fbbf24"
+                  weight={2}
+                  className="pulse-marker"
+                  eventHandlers={{
+                    click: (e) => {
+                      e.originalEvent.stopPropagation();
+                      onMapClick?.(p.lat, p.lng, p.id);
+                    },
+                  }}
+                >
+                  <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
+                    <span>🌡 Confession: &ldquo;{p.content?.slice(0, 30)}...&rdquo;</span>
+                  </Tooltip>
+                  <Popup>&ldquo;{p.content}&rdquo;</Popup>
+                </CircleMarker>
+              );
+            } else {
+              const emotion = p.emotion || '';
+              return (
+                <CircleMarker
+                  key={p.id}
+                  center={new LatLng(jLat, jLng)}
+                  radius={9}
+                  fillOpacity={0.85}
+                  color="white"
+                  fillColor={getEmotionColor(emotion)}
+                  weight={2}
+                  className="pulse-marker"
+                  eventHandlers={{
+                    click: (e) => {
+                      e.originalEvent.stopPropagation();
+                      onMapClick?.(p.lat, p.lng, p.id);
+                    },
+                  }}
+                >
+                  <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
+                    <span>{getEmotionEmoji(emotion)} Feeling: {emotion}</span>
+                  </Tooltip>
+                  <Popup>Logged mood: {emotion} {getEmotionEmoji(emotion)}</Popup>
+                </CircleMarker>
+              );
+            }
+          });
+        })()}
 
-
-        {/* Mood markers */}
-        {activeLayer === 'feel' &&
-          feelMoods &&
-          feelMoods.map((m) => {
-            const [jLat, jLng] = jitterCoord(m.id, m.lat, m.lng)
-            return (
-              <CircleMarker
-                key={m.id}
-                center={new LatLng(jLat, jLng)}
-                radius={9}
-                fillOpacity={0.85}
-                color="white"
-                fillColor={getEmotionColor(m.emotion)}
-                weight={2}
-                className="pulse-marker"
-                eventHandlers={{
-                  click: (e) => {
-                    e.originalEvent.stopPropagation()
-                    onMapClick?.(m.lat, m.lng, m.id)
-                  },
-                }}
-              >
-                <Tooltip direction="top" offset={[0, -5]} opacity={0.9}>
-                  <span>{getEmotionEmoji(m.emotion)} Feeling: {m.emotion}</span>
-                </Tooltip>
-                <Popup>Logged mood: {m.emotion} {getEmotionEmoji(m.emotion)}</Popup>
-              </CircleMarker>
-            )
-          })}
 
         {/* Truth layer - red incident markers */}
         {activeLayer === 'truth' &&
